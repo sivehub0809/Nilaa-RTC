@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use, useMemo, useCallback } from "react";
+import { useEffect, useState, use, useMemo, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -32,6 +32,8 @@ import {
   Crown,
   AlertTriangle,
   Loader2,
+  RefreshCw,
+  Home,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyCode } from "@/components/motion/copy-code";
@@ -68,12 +70,20 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
   const [wsUrl, setWsUrl] = useState<string>("");
   const [loadingToken, setLoadingToken] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isDisconnected, setIsDisconnected] = useState(false);
+  const [disconnectReason, setDisconnectReason] = useState<string>("");
+
+  const userInitiatedLeave = useRef(false);
 
   // Fetch LiveKit room token from API
   useEffect(() => {
     let active = true;
 
     async function fetchToken() {
+      setLoadingToken(true);
+      setErrorMsg(null);
+      setIsDisconnected(false);
+
       try {
         const res = await fetch(
           `/api/livekit/token?room=${encodeURIComponent(code)}&username=${encodeURIComponent(
@@ -120,6 +130,41 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
     );
   }
 
+  // If user disconnected or connection dropped
+  if (isDisconnected && !userInitiatedLeave.current) {
+    return (
+      <div className="h-screen w-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md w-full bg-card border border-border rounded-card p-8 space-y-4 shadow-2xl">
+          <div className="h-12 w-12 rounded-full bg-surface border border-border text-foreground flex items-center justify-center mx-auto">
+            <RefreshCw className="h-6 w-6 text-accent" />
+          </div>
+          <h2 className="font-heading text-xl font-bold text-foreground">
+            Call Disconnected
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {disconnectReason || "The connection to the meeting room ended."}
+          </p>
+          <div className="pt-2 flex flex-col gap-2.5">
+            <Button
+              variant="accent"
+              onClick={() => window.location.reload()}
+              className="w-full gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Rejoin Call
+            </Button>
+            <Link href="/" className="w-full">
+              <Button variant="ghost" className="w-full text-xs gap-1.5">
+                <Home className="h-3.5 w-3.5" />
+                Return to Home
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (errorMsg || !token) {
     return (
       <div className="h-screen w-screen bg-background flex flex-col items-center justify-center p-6 text-center">
@@ -141,9 +186,9 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
             >
               Retry Connection
             </Button>
-            <Link href="/home" className="w-full">
+            <Link href="/" className="w-full">
               <Button variant="ghost" className="w-full text-xs">
-                Back to Dashboard
+                Back to Home
               </Button>
             </Link>
           </div>
@@ -161,12 +206,24 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
       audio={initialAudio}
       data-lk-theme="default"
       className="h-screen w-screen bg-background overflow-hidden flex flex-col"
-      onDisconnected={() => {
-        toast("You left the meeting room");
-        router.push("/home");
+      onError={(err) => {
+        console.error("LiveKit connection error:", err);
+        toast.error(`Connection issue: ${err.message}`);
+      }}
+      onDisconnected={(reason) => {
+        if (!userInitiatedLeave.current) {
+          setIsDisconnected(true);
+          setDisconnectReason(reason ? `Disconnected (${reason})` : "Connection ended");
+        }
       }}
     >
-      <ConferenceRoom code={code} userName={userName} />
+      <ConferenceRoom
+        code={code}
+        userName={userName}
+        onLeave={() => {
+          userInitiatedLeave.current = true;
+        }}
+      />
       <RoomAudioRenderer />
     </LiveKitRoom>
   );
@@ -175,9 +232,10 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
 interface ConferenceRoomProps {
   code: string;
   userName: string;
+  onLeave: () => void;
 }
 
-function ConferenceRoom({ code, userName }: ConferenceRoomProps) {
+function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
   const router = useRouter();
   const room = useRoomContext();
   const connectionState = useConnectionState();
@@ -254,8 +312,9 @@ function ConferenceRoom({ code, userName }: ConferenceRoomProps) {
       } else if (data.type === "remove_request") {
         if (data.targetIdentity === localParticipant.identity) {
           toast("You were removed from the call by the host");
+          onLeave();
           room.disconnect();
-          router.push("/home");
+          router.push("/");
         }
       }
     } catch (e) {
@@ -411,8 +470,10 @@ function ConferenceRoom({ code, userName }: ConferenceRoomProps) {
 
   // Leave room
   const handleLeaveRoom = () => {
+    onLeave();
     room.disconnect();
-    router.push("/home");
+    toast("You left the meeting");
+    router.push("/");
   };
 
   // Convert LiveKit participants into list items for ParticipantsPanel
@@ -453,7 +514,7 @@ function ConferenceRoom({ code, userName }: ConferenceRoomProps) {
       {/* Top Header Bar */}
       <header className="h-14 border-b border-border bg-card/90 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-3">
-          <Link href="/home" className="flex items-center gap-2 group">
+          <Link href="/" className="flex items-center gap-2 group">
             <div className="flex h-7 w-7 items-center justify-center rounded-btn bg-accent text-accent-foreground font-bold shadow-cyan-glow">
               <VideoIcon className="h-4 w-4 fill-current" />
             </div>
