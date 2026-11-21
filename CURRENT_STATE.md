@@ -1,8 +1,28 @@
 # Nilaa RTC — Current State
 
-## Current Phase: Phase 1 Completed ✅
+## Current Phase: Phase 2 Core (Live Video & Data Channels) Completed ✅
 
 ### What is Completed
+
+1. **LiveKit Cloud Multi-Peer Video Streaming**
+   - Wired `@livekit/components-react` (`LiveKitRoom`, `RoomAudioRenderer`, `VideoTrack`, `useTracks`, `useParticipants`, `useLocalParticipant`, `useSpeakingParticipants`).
+   - Remote camera video streams automatically render for all participants.
+   - Remote audio automatically plays through browser speakers.
+   - Multi-device real-time video call enabled.
+
+2. **LiveKit Real-Time WebRTC Data Channel**
+   - In-call instant chat broadcast over data channel to all connected peers.
+   - Spring-animated emoji reactions broadcast to all participants simultaneously.
+   - Hand raise status broadcast and synced across peer video tiles.
+   - Host mute and remove commands broadcast via data channel.
+
+3. **Supabase Database Persistence APIs**
+   - `/api/chat`: Saves in-call chat messages into Supabase table `chat_messages`.
+   - `/api/meetings`: Logs meeting creations into Supabase table `meetings`.
+
+4. **Git Repository Initialized**
+   - Repository initialized with clean initial commit.
+   - `.env.local` strictly excluded via `.gitignore`. Ready for Vercel deployment.
 
 1. **Project Scaffold & Next.js Setup**
    - Next.js 15 (App Router) + TypeScript + Tailwind CSS.
