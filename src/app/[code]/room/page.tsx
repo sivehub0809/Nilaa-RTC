@@ -34,6 +34,8 @@ import {
   Loader2,
   RefreshCw,
   Home,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyCode } from "@/components/motion/copy-code";
@@ -250,6 +252,18 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
   const [activePanel, setActivePanel] = useState<"chat" | "participants" | null>(null);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
+
+  // Video Fit Mode per tile ("contain" = show 100% full uncropped video; "cover" = crop/fill tile box)
+  const [fitModes, setFitModes] = useState<Record<string, "contain" | "cover">>({});
+
+  const toggleFitMode = (tileId: string) => {
+    setFitModes((prev) => {
+      const current = prev[tileId] || "contain";
+      const next = current === "contain" ? "cover" : "contain";
+      toast(next === "contain" ? "Fit to frame (no cropping)" : "Filled box (cropped edges)");
+      return { ...prev, [tileId]: next };
+    });
+  };
 
   // Floating Reactions
   const [reactions, setReactions] = useState<FloatingReaction[]>([]);
@@ -567,11 +581,14 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
                 const handRaised = !!raisedHandParticipants[trackRef.participant.identity];
                 const pName = trackRef.participant.name || trackRef.participant.identity;
                 const hasVideo = trackRef.publication && !trackRef.publication.isMuted;
+                const tileId = `${trackRef.participant.identity}_${trackRef.source}`;
+                const isScreenShare = trackRef.source === Track.Source.ScreenShare;
+                const currentFit = isScreenShare ? "contain" : (fitModes[tileId] || "contain");
 
                 return (
                   <div
-                    key={`${trackRef.participant.identity}_${trackRef.source}`}
-                    className={`relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-tile overflow-hidden bg-card border border-border flex items-center justify-center transition-all duration-200 ${
+                    key={tileId}
+                    className={`relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-tile overflow-hidden bg-card border border-border flex items-center justify-center transition-all duration-200 group ${
                       isSpeaking ? "speaker-active-ring" : ""
                     }`}
                   >
@@ -579,7 +596,9 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
                     {hasVideo ? (
                       <VideoTrack
                         trackRef={trackRef}
-                        className="w-full h-full object-cover"
+                        className={`w-full h-full ${
+                          currentFit === "contain" ? "object-contain" : "object-cover"
+                        } transition-all duration-200`}
                       />
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-card gap-2">
@@ -605,13 +624,35 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
                       )}
                     </div>
 
-                    {/* Active Speaker Badge (Top Right) */}
-                    {isSpeaking && (
-                      <div className="absolute top-3 right-3 flex items-center gap-1 bg-accent/20 border border-accent/40 text-accent px-2 py-0.5 rounded-full text-[10px] font-bold z-10">
-                        <span className="h-1.5 w-1.5 rounded-full bg-accent animate-ping" />
-                        <span>Speaking</span>
-                      </div>
-                    )}
+                    {/* Top Right Actions: Active Speaker Badge & Fit/Fill Toggle */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                      {isSpeaking && (
+                        <div className="flex items-center gap-1 bg-accent/20 border border-accent/40 text-accent px-2 py-0.5 rounded-full text-[10px] font-bold">
+                          <span className="h-1.5 w-1.5 rounded-full bg-accent animate-ping" />
+                          <span>Speaking</span>
+                        </div>
+                      )}
+
+                      {!isScreenShare && hasVideo && (
+                        <button
+                          type="button"
+                          onClick={() => toggleFitMode(tileId)}
+                          className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                          title={
+                            currentFit === "contain"
+                              ? "Crop to fill box"
+                              : "Fit whole video in box"
+                          }
+                          aria-label="Toggle video fit mode"
+                        >
+                          {currentFit === "contain" ? (
+                            <Maximize2 className="h-3.5 w-3.5 text-accent" />
+                          ) : (
+                            <Minimize2 className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })

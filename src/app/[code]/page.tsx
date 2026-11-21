@@ -14,6 +14,8 @@ import {
   User,
   Volume2,
   ChevronLeft,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +48,7 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isJoining, setIsJoining] = useState(false);
+  const [fitMode, setFitMode] = useState<"contain" | "cover">("contain");
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -245,10 +248,35 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
               autoPlay
               playsInline
               muted
-              className={`w-full h-full object-cover transition-opacity duration-300 ${
+              className={`w-full h-full ${
+                fitMode === "contain" ? "object-contain" : "object-cover"
+              } transition-all duration-200 ${
                 isVideoEnabled && hasPermission ? "opacity-100" : "opacity-0"
               }`}
             />
+
+            {/* Fit / Fill Toggle (Top Right) */}
+            {isVideoEnabled && hasPermission && (
+              <button
+                type="button"
+                onClick={() =>
+                  setFitMode((prev) => (prev === "contain" ? "cover" : "contain"))
+                }
+                className="absolute top-4 right-4 h-8 w-8 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95 z-10"
+                title={
+                  fitMode === "contain"
+                    ? "Crop to fill box"
+                    : "Fit whole video in box"
+                }
+                aria-label="Toggle camera fit mode"
+              >
+                {fitMode === "contain" ? (
+                  <Maximize2 className="h-4 w-4 text-accent" />
+                ) : (
+                  <Minimize2 className="h-4 w-4" />
+                )}
+              </button>
+            )}
 
             {/* Video Off Overlay */}
             {(!isVideoEnabled || !hasPermission) && (
