@@ -5,11 +5,13 @@ import { Toaster } from "sonner";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
-  title: "Nilaa RTC — Fast & Clear Video Meetings",
+  title: "Nilaa RTC - Fast & Clear Video Meetings",
   description:
     "Instant, high-definition video meetings with real-time reactions and crisp audio.",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/nilaa-logo.jpg",
+    apple: "/nilaa-logo.jpg",
+    shortcut: "/nilaa-logo.jpg",
   },
 };
 

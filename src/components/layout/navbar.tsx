@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
-import { Video, LogIn, User, Sparkles } from "lucide-react";
+import { LogIn, User, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { type User as SupabaseUser } from "@supabase/supabase-js";
@@ -35,8 +36,15 @@ export function Navbar() {
     <header className="sticky top-0 z-40 w-full border-b border-border/70 bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-btn bg-accent text-accent-foreground font-bold shadow-cyan-glow transition-transform duration-200 group-hover:scale-105">
-            <Video className="h-5 w-5 fill-current" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden transition-transform duration-200 group-hover:scale-105">
+            <Image
+              src="/nilaa-logo.jpg"
+              alt="Nilaa RTC Logo"
+              width={36}
+              height={36}
+              className="object-cover w-full h-full"
+              priority
+            />
           </div>
           <div className="flex flex-col">
             <span className="font-heading text-lg font-bold tracking-tight text-foreground flex items-center gap-1.5">

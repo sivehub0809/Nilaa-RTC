@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Video, LogIn, Mail, Lock, ArrowRight } from "lucide-react";
+import { LogIn, Mail, Lock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -51,8 +52,15 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 py-12">
       {/* Brand Header */}
       <Link href="/" className="flex items-center gap-2 mb-8 group">
-        <div className="flex h-10 w-10 items-center justify-center rounded-btn bg-accent text-accent-foreground font-bold shadow-cyan-glow group-hover:scale-105 transition-transform">
-          <Video className="h-5 w-5 fill-current" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden group-hover:scale-105 transition-transform">
+          <Image
+            src="/nilaa-logo.jpg"
+            alt="Nilaa RTC Logo"
+            width={40}
+            height={40}
+            className="object-cover w-full h-full"
+            priority
+          />
         </div>
         <span className="font-heading text-2xl font-bold tracking-tight text-foreground">
           Nilaa <span className="text-accent">RTC</span>
