@@ -1,8 +1,26 @@
 # Nilaa RTC — Current State
 
-## Current Phase: Phase 2 Core (Live Video & Data Channels) Completed ✅
+## Current Status: Production Live & Verified on Vercel 🚀
 
-### What is Completed
+- **Live Deployment**: Successfully deployed to Vercel with automatic HTTPS, custom domains, and zero-leak environment isolation.
+- **Cross-Device Tested**: Real-time video conferencing tested and verified between mobile (Safari/Chrome) and desktop.
+- **Audio & Video**: High-definition, low-latency WebRTC streams via LiveKit Cloud SFU.
+- **Real-Time Features**:
+  - Live in-call chat synced across peers.
+  - Floating emoji reactions with spring physics.
+  - Hand raising indicators.
+  - Cyan active speaker detection and glowing tiles.
+  - Mobile hamburger drawer (☰) sliding smoothly from right to middle.
+  - Host controls (mute/remove).
+- **Authentication & Persistence**:
+  - Supabase Auth SSR with persistent cookies (stay logged in).
+  - Guest flow (join with name only).
+  - Meeting codes (e.g. `X7K9M2`) with animated copy button.
+  - Chat and meeting logging APIs.
+
+---
+
+### Previous Milestones Completed
 
 1. **LiveKit Cloud Multi-Peer Video Streaming**
    - Wired `@livekit/components-react` (`LiveKitRoom`, `RoomAudioRenderer`, `VideoTrack`, `useTracks`, `useParticipants`, `useLocalParticipant`, `useSpeakingParticipants`).
