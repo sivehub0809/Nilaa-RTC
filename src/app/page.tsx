@@ -60,21 +60,22 @@ export default function LandingPage() {
     >
       {/* Transparent Navbar - Completely seamless with landing page background */}
       <header className="w-full bg-transparent">
-        <div className="w-full flex h-18 sm:h-20 items-center justify-between px-6 sm:px-10 lg:px-14">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden transition-transform duration-200 group-hover:scale-105 shadow-xs">
+        <div className="w-full flex h-20 sm:h-22 items-center justify-between px-6 sm:px-10 lg:px-14">
+          <Link href="/" className="flex items-center gap-3 group">
+            {/* Logo 1.2x larger (44px) */}
+            <div className="flex h-11 w-11 items-center justify-center rounded-full overflow-hidden transition-transform duration-200 group-hover:scale-105 shadow-sm border border-white/60">
               <Image
                 src="/nilaa-logo.jpg"
                 alt="Nilaa RTC Logo"
-                width={36}
-                height={36}
+                width={44}
+                height={44}
                 className="object-cover w-full h-full"
                 priority
               />
             </div>
             <div className="flex flex-col">
-              <span className="font-heading text-lg font-medium tracking-tight text-gray-800 flex items-center gap-1.5">
-                Nilaa <span className="text-sky-600 font-light">RTC</span>
+              <span className="font-sans text-xl font-medium tracking-tight text-slate-800 flex items-center gap-1.5">
+                Nilaa <span className="text-sky-600 font-normal">RTC</span>
               </span>
             </div>
           </Link>
@@ -88,7 +89,7 @@ export default function LandingPage() {
                     <span>Go to Meetings</span>
                   </button>
                 </Link>
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-sky-200/60 text-xs font-light text-slate-700">
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 border border-sky-200/60 text-xs font-normal text-slate-700">
                   <User className="h-3.5 w-3.5 text-blue-600" />
                   <span className="truncate max-w-[140px]">
                     {user.user_metadata?.display_name || user.email?.split("@")[0]}
@@ -98,17 +99,17 @@ export default function LandingPage() {
             ) : (
               <>
                 <Link href="/guest">
-                  <button className="text-xs sm:text-sm px-3.5 py-1.5 rounded-xl text-gray-700 hover:text-gray-950 hover:bg-white/40 transition-colors font-light cursor-pointer">
+                  <button className="text-xs sm:text-sm px-3.5 py-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-white/50 transition-colors font-normal cursor-pointer">
                     Join as Guest
                   </button>
                 </Link>
                 <Link href="/login">
-                  <button className="text-xs sm:text-sm px-3.5 py-1.5 rounded-xl border border-sky-300/60 text-sky-900 bg-white/50 hover:bg-white/80 transition-colors font-normal shadow-xs cursor-pointer">
+                  <button className="text-xs sm:text-sm px-3.5 py-2 rounded-xl border border-sky-300/70 text-sky-900 bg-white/60 hover:bg-white/90 transition-colors font-medium shadow-xs cursor-pointer">
                     Log In
                   </button>
                 </Link>
                 <Link href="/signup">
-                  <button className="text-xs sm:text-sm px-4 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm cursor-pointer">
+                  <button className="text-xs sm:text-sm px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm cursor-pointer">
                     Sign Up
                   </button>
                 </Link>
@@ -121,12 +122,12 @@ export default function LandingPage() {
       <main className="flex-1 flex flex-col">
         {/* Hero Section */}
         <section className="relative px-4 sm:px-6 pt-10 sm:pt-14 pb-20 max-w-4xl mx-auto w-full text-center flex flex-col items-center">
-          {/* Quick Actions Bar - Moved to top as sketched */}
+          {/* Quick Actions Bar - Placed at Top per sketch */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="w-full max-w-xl flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 p-2 rounded-[22px] bg-white/85 border border-white/80 backdrop-blur-md shadow-2xl shadow-sky-900/10"
+            className="w-full max-w-xl flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 p-2 rounded-[22px] bg-white/90 border border-white/90 backdrop-blur-md shadow-2xl shadow-sky-900/10"
           >
             <button
               onClick={handleStartInstant}
@@ -150,7 +151,7 @@ export default function LandingPage() {
                   placeholder="Enter code (e.g. X7K9M2)"
                   value={meetingCode}
                   onChange={(e) => setMeetingCode(e.target.value.toUpperCase())}
-                  className="w-full h-11 pl-9 pr-3 uppercase tracking-wider font-mono text-xs sm:text-sm rounded-[14px] border border-sky-200/80 bg-white/95 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent font-light"
+                  className="w-full h-11 pl-9 pr-3 uppercase tracking-wider font-mono text-xs sm:text-sm rounded-[14px] border border-sky-200/80 bg-white text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent font-normal"
                 />
               </div>
               <button
@@ -168,36 +169,36 @@ export default function LandingPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.15 }}
-            className="mt-3 text-xs text-slate-600/80 font-light flex items-center gap-1.5"
+            className="mt-3.5 text-xs text-slate-700/80 font-normal flex items-center gap-1.5"
           >
             <span>No account required.</span>
             <Link
               href="/guest"
-              className="text-sky-600 hover:underline font-normal inline-flex items-center gap-1"
+              className="text-sky-700 hover:underline font-medium inline-flex items-center gap-1"
             >
               Join as Guest <ArrowRight className="h-3 w-3" />
             </Link>
           </motion.div>
 
-          {/* Main Title - Thin, Airy & Refined, placed below Quick Actions as sketched */}
+          {/* Main Title - Geist font, Medium weight, Balanced Size */}
           <motion.h1
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="mt-14 sm:mt-16 font-heading text-4xl sm:text-5xl md:text-6xl font-light sm:font-normal tracking-tight text-slate-900 leading-[1.15] max-w-3xl"
+            className="mt-14 sm:mt-16 font-sans text-4xl sm:text-5xl md:text-6xl font-medium tracking-tight text-slate-900 leading-[1.18] max-w-3xl"
           >
             Clear, fast video meetings.{" "}
-            <span className="text-sky-500 font-light sm:font-normal">
+            <span className="text-sky-500 font-medium">
               Zero friction.
             </span>
           </motion.h1>
 
-          {/* Subtitle / Description */}
+          {/* Subtitle / Description - Larger size, Darker text for clear readability */}
           <motion.p
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
-            className="mt-5 text-sm sm:text-base md:text-lg text-slate-500 font-light max-w-xl leading-relaxed"
+            className="mt-6 text-base sm:text-lg md:text-xl text-slate-700 font-normal max-w-2xl leading-relaxed"
           >
             Connect instantly with up to 15 people. Crisp audio, sharp video,
             real-time emoji reactions, and seamless screen sharing right from your browser.
