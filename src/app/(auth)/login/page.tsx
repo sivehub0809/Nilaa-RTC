@@ -40,7 +40,7 @@ export default function LoginPage() {
       }
 
       toast.success("Welcome back to Nilaa RTC!");
-      router.push("/home");
+      router.push("/dashboard");
       router.refresh();
     } catch {
       toast.error("Failed to sign in. Please try again.");

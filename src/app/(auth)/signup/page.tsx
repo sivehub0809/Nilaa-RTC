@@ -51,7 +51,7 @@ export default function SignUpPage() {
       }
 
       toast.success("Account created successfully!");
-      router.push("/home");
+      router.push("/dashboard");
       router.refresh();
     } catch {
       toast.error("Failed to create account. Please try again.");

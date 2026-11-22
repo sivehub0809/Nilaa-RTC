@@ -17,7 +17,7 @@ import {
   useSpeakingParticipants,
   useConnectionState,
 } from "@livekit/components-react";
-import { Track, ConnectionState } from "livekit-client";
+import { Track, ConnectionState, Room } from "livekit-client";
 import {
   Mic,
   MicOff,
@@ -37,6 +37,8 @@ import {
   Home,
   Maximize2,
   Minimize2,
+  FlipHorizontal,
+  SwitchCamera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyCode } from "@/components/motion/copy-code";
@@ -257,6 +259,43 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
 
   // Video Fit Mode per tile
   const [fitModes, setFitModes] = useState<Record<string, "contain" | "cover">>({});
+
+  // Local camera view mirroring (fixes inverted direction / contrast on mobile)
+  const [isLocalMirrored, setIsLocalMirrored] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const stored = sessionStorage.getItem("nilaa_mirror_enabled");
+      if (stored !== null) return stored === "true";
+    }
+    return true;
+  });
+
+  const toggleLocalMirror = () => {
+    setIsLocalMirrored((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("nilaa_mirror_enabled", String(next));
+      }
+      toast(next ? "Self camera view mirrored" : "Self camera view unmirrored");
+      return next;
+    });
+  };
+
+  const handleFlipCamera = async () => {
+    try {
+      const devices = await Room.getLocalDevices("videoinput");
+      if (devices && devices.length > 1) {
+        const currentDeviceId = room.getActiveDevice("videoinput");
+        const nextDevice = devices.find((d: MediaDeviceInfo) => d.deviceId !== currentDeviceId) || devices[0];
+        await room.switchActiveDevice("videoinput", nextDevice.deviceId);
+        toast(`Switched camera to: ${nextDevice.label || "Next Camera"}`);
+      } else {
+        toast("No additional camera detected on this device");
+      }
+    } catch (e) {
+      console.warn("Switch camera error:", e);
+      toast.error("Could not switch camera device");
+    }
+  };
 
   // Presence Notifications (join/leave popups)
   const [presenceNotifications, setPresenceNotifications] = useState<PresenceNotification[]>([]);
@@ -652,6 +691,8 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
                         trackRef={trackRef}
                         className={`w-full h-full ${
                           currentFit === "contain" ? "object-contain" : "object-cover"
+                        } ${
+                          isLocal && !isScreenShare && isLocalMirrored ? "-scale-x-100" : "scale-x-100"
                         } transition-all duration-200`}
                       />
                     ) : (
@@ -692,6 +733,30 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
                           <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-ping" />
                           <span>Speaking</span>
                         </div>
+                      )}
+
+                      {/* Mirror and Flip controls for local video */}
+                      {isLocal && !isScreenShare && hasVideo && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={handleFlipCamera}
+                            className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                            title="Flip camera front/back"
+                            aria-label="Flip camera front or back"
+                          >
+                            <SwitchCamera className="h-3.5 w-3.5 text-accent" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={toggleLocalMirror}
+                            className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                            title={isLocalMirrored ? "Disable mirror view" : "Enable mirror view"}
+                            aria-label="Toggle camera mirror view"
+                          >
+                            <FlipHorizontal className={`h-3.5 w-3.5 ${isLocalMirrored ? "text-accent" : ""}`} />
+                          </button>
+                        </>
                       )}
 
                       {!isScreenShare && hasVideo && (

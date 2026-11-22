@@ -45,17 +45,17 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Protect /home and dashboard routes if logged out
-  if (!user && pathname.startsWith("/home")) {
+  // Protect /home and /dashboard routes if logged out
+  if (!user && (pathname.startsWith("/home") || pathname.startsWith("/dashboard"))) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // If logged in, redirect /login or /signup to /home
+  // If logged in, redirect /login or /signup to /dashboard
   if (user && (pathname === "/login" || pathname === "/signup")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/home";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 

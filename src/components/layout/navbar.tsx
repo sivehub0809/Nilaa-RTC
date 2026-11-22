@@ -55,19 +55,27 @@ export function Navbar() {
 
         <nav className="flex items-center gap-3">
           {loading ? (
-            <div className="h-9 w-20 animate-pulse rounded-btn bg-surface" />
+            <div className="h-9 w-24 animate-pulse rounded-btn bg-surface" />
           ) : user ? (
-            <div className="flex items-center gap-3">
-              <Link href="/home">
-                <Button variant="accent" size="sm" className="gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  Dashboard
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <Link href="/dashboard">
+                <Button variant="accent" size="sm" className="gap-2 shadow-sm font-semibold">
+                  <div className="h-4 w-4 relative flex items-center justify-center shrink-0">
+                    <Image
+                      src="/dashboard-icon.png"
+                      alt="Dashboard"
+                      width={16}
+                      height={16}
+                      className="object-contain brightness-0"
+                    />
+                  </div>
+                  <span>Dashboard</span>
                 </Button>
               </Link>
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-btn bg-surface border border-border text-xs text-muted-foreground">
                 <User className="h-3.5 w-3.5 text-accent" />
-                <span className="truncate max-w-[140px]">
-                  {user.email?.split("@")[0]}
+                <span className="truncate max-w-[140px] font-medium text-foreground">
+                  {user.user_metadata?.display_name || user.email?.split("@")[0]}
                 </span>
               </div>
             </div>
