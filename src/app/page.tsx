@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -13,17 +13,25 @@ import {
   ArrowRight,
   Keyboard,
   Users,
+  User,
 } from "lucide-react";
-import { Navbar } from "@/components/layout/navbar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { createClient } from "@/lib/supabase/client";
 import { generateMeetingCode, normalizeMeetingCode } from "@/lib/utils";
+import { type User as SupabaseUser } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
 export default function LandingPage() {
   const router = useRouter();
   const [meetingCode, setMeetingCode] = useState("");
   const [isStarting, setIsStarting] = useState(false);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+  }, []);
 
   const handleStartInstant = () => {
     setIsStarting(true);
@@ -72,21 +80,40 @@ export default function LandingPage() {
           </Link>
 
           <nav className="flex items-center gap-2 sm:gap-3">
-            <Link href="/guest">
-              <button className="text-xs sm:text-sm px-3 py-1.5 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-sky-50 transition-colors font-medium">
-                Join as Guest
-              </button>
-            </Link>
-            <Link href="/login">
-              <button className="text-xs sm:text-sm px-3 py-1.5 rounded-lg border border-sky-300 text-sky-700 hover:bg-sky-50 transition-colors font-medium">
-                Log In
-              </button>
-            </Link>
-            <Link href="/signup">
-              <button className="text-xs sm:text-sm px-4 py-1.5 rounded-lg bg-sky-500 text-white hover:bg-sky-600 transition-colors font-semibold shadow-sm">
-                Sign Up
-              </button>
-            </Link>
+            {user ? (
+              <div className="flex items-center gap-2.5">
+                <Link href="/home">
+                  <button className="text-xs sm:text-sm px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors font-semibold shadow-sm flex items-center gap-2">
+                    <Video className="h-4 w-4" />
+                    <span>Go to Meetings</span>
+                  </button>
+                </Link>
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 border border-sky-200 text-xs font-medium text-slate-700">
+                  <User className="h-3.5 w-3.5 text-blue-600" />
+                  <span className="truncate max-w-[140px]">
+                    {user.user_metadata?.display_name || user.email?.split("@")[0]}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Link href="/guest">
+                  <button className="text-xs sm:text-sm px-3.5 py-1.5 rounded-xl text-gray-700 hover:text-gray-950 hover:bg-white/60 transition-colors font-medium">
+                    Join as Guest
+                  </button>
+                </Link>
+                <Link href="/login">
+                  <button className="text-xs sm:text-sm px-3.5 py-1.5 rounded-xl border border-sky-300 text-sky-800 bg-white/50 hover:bg-white transition-colors font-semibold">
+                    Log In
+                  </button>
+                </Link>
+                <Link href="/signup">
+                  <button className="text-xs sm:text-sm px-4 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors font-semibold shadow-sm">
+                    Sign Up
+                  </button>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>

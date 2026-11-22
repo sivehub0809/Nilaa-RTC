@@ -58,7 +58,7 @@ export function Navbar() {
             <div className="h-9 w-24 animate-pulse rounded-btn bg-surface" />
           ) : user ? (
             <div className="flex items-center gap-2.5 sm:gap-3">
-              <Link href="/dashboard">
+              <Link href="/home">
                 <Button variant="accent" size="sm" className="gap-2 shadow-sm font-semibold">
                   <div className="h-4 w-4 relative flex items-center justify-center shrink-0">
                     <Image
@@ -66,10 +66,10 @@ export function Navbar() {
                       alt="Dashboard"
                       width={16}
                       height={16}
-                      className="object-contain brightness-0"
+                      className="object-contain brightness-0 invert"
                     />
                   </div>
-                  <span>Dashboard</span>
+                  <span>Meetings</span>
                 </Button>
               </Link>
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-btn bg-surface border border-border text-xs text-muted-foreground">

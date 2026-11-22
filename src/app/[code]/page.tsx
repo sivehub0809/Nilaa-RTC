@@ -341,24 +341,24 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col justify-between p-4 sm:p-8">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between p-4 sm:p-8">
       {/* Top Header */}
       <div className="flex items-center justify-between max-w-5xl mx-auto w-full mb-6">
         <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors group"
+          href="/home"
+          className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors group"
         >
           <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
           <div className="flex items-center gap-2">
             <div className="h-6 w-6 rounded-full overflow-hidden flex items-center justify-center">
               <Image src="/nilaa-logo.jpg" alt="Nilaa" width={24} height={24} className="object-cover" />
             </div>
-            <span>Dashboard</span>
+            <span>Home</span>
           </div>
         </Link>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground hidden sm:inline">Room Code:</span>
+          <span className="text-xs text-slate-500 hidden sm:inline">Room Code:</span>
           <CopyCode code={code} />
         </div>
       </div>
@@ -367,7 +367,7 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
       <div className="max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center flex-1">
         {/* Left: Camera Preview (rounded-[24px]) */}
         <div className="lg:col-span-7 flex flex-col items-center w-full">
-          <div className="relative w-full aspect-video rounded-[24px] overflow-hidden bg-card border border-border shadow-2xl flex items-center justify-center">
+          <div className="relative w-full aspect-video rounded-[24px] overflow-hidden bg-slate-200 border border-slate-200 shadow-xl flex items-center justify-center">
             {/* Live Video Preview with dynamic orientation/mirroring */}
             <video
               ref={videoRef}
@@ -389,22 +389,22 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
               <button
                 type="button"
                 onClick={flipCamera}
-                className="h-8 w-8 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                className="h-9 w-9 rounded-xl bg-white/90 hover:bg-white border border-slate-200 text-slate-700 flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
                 title={`Switch camera (Currently: ${facingMode === "user" ? "Front" : "Back"})`}
                 aria-label="Flip camera front or back"
               >
-                <SwitchCamera className="h-4 w-4 text-accent" />
+                <SwitchCamera className="h-4 w-4 text-blue-600" />
               </button>
 
               {/* Mirror View toggle (Fixes inverted / opposite direction on mobile) */}
               <button
                 type="button"
                 onClick={toggleMirror}
-                className="h-8 w-8 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                className="h-9 w-9 rounded-xl bg-white/90 hover:bg-white border border-slate-200 text-slate-700 flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
                 title={isMirrored ? "Disable mirror view" : "Enable mirror view"}
                 aria-label="Toggle camera mirror view"
               >
-                <FlipHorizontal className={`h-4 w-4 ${isMirrored ? "text-accent" : "text-muted-foreground"}`} />
+                <FlipHorizontal className={`h-4 w-4 ${isMirrored ? "text-blue-600" : "text-slate-400"}`} />
               </button>
 
               {/* Fit / Fill Toggle */}
@@ -413,7 +413,7 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
                 onClick={() =>
                   setFitMode((prev) => (prev === "contain" ? "cover" : "contain"))
                 }
-                className="h-8 w-8 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                className="h-9 w-9 rounded-xl bg-white/90 hover:bg-white border border-slate-200 text-slate-700 flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
                 title={
                   fitMode === "contain"
                     ? "Crop to fill box"
@@ -422,7 +422,7 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
                 aria-label="Toggle camera fit mode"
               >
                 {fitMode === "contain" ? (
-                  <Maximize2 className="h-4 w-4 text-accent" />
+                  <Maximize2 className="h-4 w-4 text-blue-600" />
                 ) : (
                   <Minimize2 className="h-4 w-4" />
                 )}
@@ -431,8 +431,8 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
 
             {/* Camera Off / Permission Overlay */}
             {(!isVideoEnabled || !hasPermission) && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-card text-muted-foreground gap-3 select-none">
-                <div className="h-20 w-20 rounded-full bg-surface border border-border flex items-center justify-center text-foreground font-heading text-2xl font-bold">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 text-slate-500 gap-3 select-none">
+                <div className="h-20 w-20 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-700 font-heading text-2xl font-bold shadow-sm">
                   {displayName ? displayName.charAt(0).toUpperCase() : <User className="h-8 w-8" />}
                 </div>
                 <p className="text-xs sm:text-sm font-medium">
@@ -443,7 +443,7 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
                 {!hasPermission && (
                   <button
                     onClick={() => startPreview({ video: true, audio: true })}
-                    className="text-xs text-accent hover:underline flex items-center gap-1 font-semibold"
+                    className="text-xs text-blue-600 hover:underline flex items-center gap-1 font-semibold"
                   >
                     <RefreshCw className="h-3.5 w-3.5" /> Retry Camera Access
                   </button>
@@ -451,37 +451,37 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
               </div>
             )}
 
-            {/* In-Preview Quick Toggle Controls (Bottom Center) */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-card/90 backdrop-blur-md px-4 py-2 rounded-btn border border-border/80 shadow-xl z-20">
-              <Button
+            {/* In-Preview Quick Toggle Controls (Bottom Center - Generous Touch Targets) */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white/95 backdrop-blur-md px-4 py-2 rounded-2xl border border-slate-200 shadow-xl z-20">
+              <button
                 type="button"
-                variant={isAudioEnabled ? "secondary" : "destructive"}
-                size="iconSm"
                 onClick={toggleAudio}
                 title={isAudioEnabled ? "Mute Microphone" : "Unmute Microphone"}
-                className="transition-all active:scale-90"
+                className={`h-11 w-11 rounded-xl flex items-center justify-center transition-all active:scale-90 shadow-sm ${
+                  isAudioEnabled ? "bg-slate-100 text-slate-800 hover:bg-slate-200" : "bg-red-500 text-white"
+                }`}
               >
-                {isAudioEnabled ? <Mic className="h-4 w-4 text-accent" /> : <MicOff className="h-4 w-4" />}
-              </Button>
+                {isAudioEnabled ? <Mic className="h-5 w-5 text-blue-600" /> : <MicOff className="h-5 w-5" />}
+              </button>
 
-              <Button
+              <button
                 type="button"
-                variant={isVideoEnabled ? "secondary" : "destructive"}
-                size="iconSm"
                 onClick={toggleVideo}
                 title={isVideoEnabled ? "Turn Off Camera" : "Turn On Camera"}
-                className="transition-all active:scale-90"
+                className={`h-11 w-11 rounded-xl flex items-center justify-center transition-all active:scale-90 shadow-sm ${
+                  isVideoEnabled ? "bg-slate-100 text-slate-800 hover:bg-slate-200" : "bg-red-500 text-white"
+                }`}
               >
-                {isVideoEnabled ? <Video className="h-4 w-4 text-accent" /> : <VideoOff className="h-4 w-4" />}
-              </Button>
+                {isVideoEnabled ? <Video className="h-5 w-5 text-blue-600" /> : <VideoOff className="h-5 w-5" />}
+              </button>
             </div>
 
             {/* Mic Audio Level Indicator Pill (Top Left) */}
-            <div className="absolute top-4 left-4 flex items-center gap-2 bg-card/85 backdrop-blur-md px-3 py-1.5 rounded-btn border border-border text-xs z-10">
-              <Volume2 className="h-3.5 w-3.5 text-accent" />
-              <div className="w-16 h-2 bg-surface rounded-full overflow-hidden">
+            <div className="absolute top-4 left-4 flex items-center gap-2 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200 text-xs z-10 shadow-xs">
+              <Volume2 className="h-3.5 w-3.5 text-blue-600" />
+              <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-accent transition-all duration-75"
+                  className="h-full bg-blue-600 transition-all duration-75"
                   style={{
                     width: isAudioEnabled ? `${Math.min(100, audioLevel * 1.5)}%` : "0%",
                   }}
@@ -493,29 +493,29 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
 
         {/* Right: Meeting Join Settings Card */}
         <div className="lg:col-span-5 w-full">
-          <Card className="p-6 sm:p-8 bg-card border-border rounded-card shadow-xl space-y-6">
+          <Card className="p-6 sm:p-8 bg-white border-slate-200 rounded-2xl shadow-soft-card space-y-6">
             <div>
-              <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+              <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 Ready to join?
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-slate-500 mt-1">
                 Check your audio, video, and display name before entering.
               </p>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
                   Your Display Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <input
                     type="text"
                     placeholder="Enter your name"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="pl-10 h-11 text-sm font-medium"
+                    className="w-full h-12 pl-12 pr-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     required
                   />
                 </div>
@@ -524,7 +524,7 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
               {/* Device Selectors */}
               {videoDevices.length > 0 && (
                 <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground font-medium">
+                  <label className="text-xs font-semibold text-slate-600">
                     Camera Device
                   </label>
                   <select
@@ -533,7 +533,7 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
                       setSelectedVideoId(e.target.value);
                       startPreview({ deviceId: e.target.value, video: isVideoEnabled });
                     }}
-                    className="w-full h-10 rounded-btn bg-surface border border-border px-3 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                    className="w-full h-10 rounded-xl bg-slate-50 border border-slate-200 px-3 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {videoDevices.map((d) => (
                       <option key={d.deviceId} value={d.deviceId}>
@@ -546,13 +546,13 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
 
               {audioDevices.length > 0 && (
                 <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground font-medium">
+                  <label className="text-xs font-semibold text-slate-600">
                     Microphone Device
                   </label>
                   <select
                     value={selectedAudioId}
                     onChange={(e) => setSelectedAudioId(e.target.value)}
-                    className="w-full h-10 rounded-btn bg-surface border border-border px-3 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                    className="w-full h-10 rounded-xl bg-slate-50 border border-slate-200 px-3 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {audioDevices.map((d) => (
                       <option key={d.deviceId} value={d.deviceId}>
@@ -563,23 +563,23 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
                 </div>
               )}
 
-              <Button
-                onClick={handleJoinMeeting}
-                disabled={isJoining || !displayName.trim()}
-                variant="accent"
-                size="lg"
-                className="w-full text-base font-semibold gap-2.5 h-12 mt-4"
-              >
-                <span>{isJoining ? "Entering Call..." : "Join Now"}</span>
-                <ArrowRight className="h-5 w-5" />
-              </Button>
+              <div className="pt-2">
+                <button
+                  onClick={handleJoinMeeting}
+                  disabled={isJoining || !displayName.trim()}
+                  className="w-full h-13 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:opacity-60 text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all cursor-pointer"
+                >
+                  <span>{isJoining ? "Entering Call..." : "Join Now"}</span>
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           </Card>
         </div>
       </div>
 
       {/* Bottom Footer Note */}
-      <div className="text-center text-xs text-muted-foreground py-4">
+      <div className="text-center text-xs text-slate-400 py-4">
         <span>Nilaa RTC • Real-time video conferencing • Room {code}</span>
       </div>
     </div>

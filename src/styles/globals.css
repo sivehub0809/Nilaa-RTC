@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #0B0D12;
-  --foreground: #F2F4F8;
+  --background: #FFFFFF;
+  --foreground: #0F172A;
 }
 
 * {
@@ -12,8 +12,8 @@
 }
 
 body {
-  background-color: #0B0D12;
-  color: #F2F4F8;
+  background-color: #FFFFFF;
+  color: #0F172A;
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -33,30 +33,30 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0B0D12;
+  background: #F8FAFC;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #232938;
+  background: #CBD5E1;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #323B50;
+  background: #94A3B8;
 }
 
 /* Glow utilities */
 .glow-cyan {
-  box-shadow: 0 0 20px rgba(96, 165, 250, 0.3);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.25);
 }
 
 .glow-cyan-sm {
-  box-shadow: 0 0 10px rgba(96, 165, 250, 0.22);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.18);
 }
 
 .speaker-active-ring {
-  border: 2px solid #60A5FA !important;
-  box-shadow: 0 0 24px rgba(96, 165, 250, 0.45) !important;
+  border: 2px solid #3B82F6 !important;
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.35) !important;
 }
 
 /* Respect reduce-motion preferences */

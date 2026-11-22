@@ -21,18 +21,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark ${GeistSans.variable} ${GeistMono.variable}`}>
-      <body className="antialiased bg-background text-foreground min-h-screen flex flex-col font-sans">
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+      <body className="antialiased bg-background text-foreground min-h-screen flex flex-col font-sans selection:bg-sky-100 selection:text-sky-900">
         {children}
         <Toaster
           position="top-right"
-          theme="dark"
+          theme="light"
           toastOptions={{
             style: {
-              background: "#141821",
-              border: "1px solid #232938",
-              color: "#F2F4F8",
+              background: "#FFFFFF",
+              border: "1px solid #E2E8F0",
+              color: "#0F172A",
               fontFamily: "var(--font-geist-sans)",
+              borderRadius: "14px",
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.08)",
             },
           }}
         />

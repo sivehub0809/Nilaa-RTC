@@ -5,10 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { UserPlus, Mail, Lock, User } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
@@ -17,12 +16,13 @@ export default function SignUpPage() {
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || !displayName) {
-      toast.error("Please fill in all fields");
+      toast.error("Please fill in your name, email, and password");
       return;
     }
 
@@ -39,7 +39,7 @@ export default function SignUpPage() {
         password,
         options: {
           data: {
-            display_name: displayName,
+            display_name: displayName.trim(),
           },
         },
       });
@@ -51,7 +51,7 @@ export default function SignUpPage() {
       }
 
       toast.success("Account created successfully!");
-      router.push("/dashboard");
+      router.push("/home");
       router.refresh();
     } catch {
       toast.error("Failed to create account. Please try again.");
@@ -60,120 +60,210 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 py-12">
-      {/* Brand Header */}
-      <Link href="/" className="flex items-center gap-2 mb-8 group">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden group-hover:scale-105 transition-transform">
-          <Image
-            src="/nilaa-logo.jpg"
-            alt="Nilaa RTC Logo"
-            width={40}
-            height={40}
-            className="object-cover w-full h-full"
-            priority
-          />
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-0 sm:p-6 md:p-10 text-slate-900 select-none">
+      {/* Main Full-Screen / Split Card Container */}
+      <div className="w-full max-w-5xl bg-white rounded-none sm:rounded-[32px] border-0 sm:border border-slate-200/80 shadow-none sm:shadow-2xl overflow-hidden min-h-screen sm:min-h-[640px] flex flex-col md:flex-row">
+        
+        {/* ================= LEFT SIDE (DESKTOP ARTWORK CARD) ================= */}
+        <div className="hidden md:flex flex-col justify-between w-1/2 bg-gradient-to-br from-blue-500 via-sky-400 to-indigo-500 p-10 lg:p-12 text-white relative overflow-hidden">
+          {/* Decorative circles */}
+          <div className="absolute -top-16 -left-16 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-white/15 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Top Brand Pill */}
+          <div className="relative z-10 flex items-center gap-2.5">
+            <div className="h-10 w-10 rounded-full bg-white p-0.5 shadow-md flex items-center justify-center overflow-hidden">
+              <Image
+                src="/nilaa-logo.jpg"
+                alt="Nilaa"
+                width={38}
+                height={38}
+                className="object-cover w-full h-full"
+                priority
+              />
+            </div>
+            <span className="font-heading font-extrabold text-xl tracking-tight text-white drop-shadow-xs">
+              Nilaa <span className="text-sky-200">RTC</span>
+            </span>
+          </div>
+
+          {/* Center Mascot & Art Display */}
+          <div className="relative z-10 flex flex-col items-center justify-center my-auto py-8">
+            <div className="relative h-56 w-56 lg:h-64 lg:w-64 rounded-full bg-white/20 p-4 backdrop-blur-md border border-white/30 shadow-2xl flex items-center justify-center group">
+              <div className="h-full w-full rounded-full overflow-hidden bg-white shadow-inner flex items-center justify-center">
+                <Image
+                  src="/nilaa-logo.jpg"
+                  alt="Nilaa Mascot"
+                  width={240}
+                  height={240}
+                  className="object-cover w-full h-full scale-105 group-hover:scale-110 transition-transform duration-500"
+                  priority
+                />
+              </div>
+            </div>
+            <h2 className="font-heading text-2xl lg:text-3xl font-extrabold text-white mt-8 text-center tracking-tight drop-shadow-sm">
+              Create your account.
+            </h2>
+            <p className="text-sky-100 text-sm text-center mt-2 max-w-xs font-medium">
+              Host instant video calls, customize your profile, and connect with zero friction.
+            </p>
+          </div>
+
+          {/* Bottom Footer Note */}
+          <div className="relative z-10 text-xs text-sky-100/80 font-medium">
+            © 2026 Nilaa RTC • Real-time WebRTC conferencing
+          </div>
         </div>
-        <span className="font-heading text-2xl font-bold tracking-tight text-foreground">
-          Nilaa <span className="text-accent">RTC</span>
-        </span>
-      </Link>
 
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
-      >
-        <Card className="border-border bg-card">
-          <CardHeader className="space-y-1 text-center pb-4">
-            <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
-              Create your account
-            </CardTitle>
-            <CardDescription className="text-muted-foreground text-sm">
-              Start hosting seamless video meetings with Nilaa RTC
-            </CardDescription>
-          </CardHeader>
+        {/* ================= RIGHT SIDE (FORM FOR MOBILE & DESKTOP) ================= */}
+        <div className="flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-14 bg-white min-h-screen sm:min-h-auto">
+          {/* Top Navigation Row */}
+          <div className="flex items-center justify-between">
+            {/* Back button */}
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors py-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back</span>
+            </Link>
 
-          <CardContent>
-            <form onSubmit={handleSignUp} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-foreground">
+            {/* Switch to Sign In */}
+            <div className="text-xs sm:text-sm text-slate-500">
+              Already have an account?{" "}
+              <Link href="/login" className="text-blue-600 hover:text-blue-700 font-bold hover:underline">
+                Sign in
+              </Link>
+            </div>
+          </div>
+
+          {/* Form Content */}
+          <div className="max-w-md w-full mx-auto my-auto py-6 sm:py-8 space-y-6 sm:space-y-8">
+            {/* Mobile Mascot Header */}
+            <div className="md:hidden flex flex-col items-center text-center space-y-3 mb-2">
+              <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-blue-400 p-0.5 shadow-md">
+                <Image
+                  src="/nilaa-logo.jpg"
+                  alt="Nilaa"
+                  width={64}
+                  height={64}
+                  className="object-cover w-full h-full rounded-full"
+                  priority
+                />
+              </div>
+            </div>
+
+            {/* Headings */}
+            <div className="space-y-1.5 text-center sm:text-left">
+              <h1 className="font-heading text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+                Sign up
+              </h1>
+              <p className="text-sm text-slate-500 font-medium">
+                Create your Nilaa RTC account in seconds.
+              </p>
+            </div>
+
+            {/* Input Form */}
+            <form onSubmit={handleSignUp} className="space-y-5">
+              {/* Full Name */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
                   Your Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+                  <input
                     type="text"
                     placeholder="Alex Morgan"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     required
-                    className="pl-10 h-11"
+                    className="w-full h-13 pl-12 pr-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 text-sm sm:text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-foreground">
-                  Email address
+              {/* Email Address */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+                  <input
                     type="email"
-                    placeholder="alex@example.com"
+                    placeholder="name@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="pl-10 h-11"
+                    className="w-full h-13 pl-12 pr-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 text-sm sm:text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-foreground">
+              {/* Password */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="password"
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+                  <input
+                    type={showPassword ? "text" : "password"}
                     placeholder="At least 6 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="pl-10 h-11"
+                    className="w-full h-13 pl-12 pr-12 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 text-sm sm:text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors p-1"
+                    title={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                variant="accent"
-                className="w-full h-11 text-base font-semibold gap-2 mt-2"
-                disabled={loading}
-              >
-                <UserPlus className="h-4 w-4" />
-                {loading ? "Creating account..." : "Sign Up"}
-              </Button>
+              {/* Submit Button (Generous Touch Target for Phone & Desktop) */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-13 sm:h-14 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:opacity-60 text-white font-bold text-base sm:text-lg flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all cursor-pointer"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>Creating account...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Sign up</span>
+                      <ArrowRight className="h-5 w-5" />
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
-          </CardContent>
 
-          <CardFooter className="flex flex-col gap-3 pt-2 text-center text-xs text-muted-foreground border-t border-border/60">
-            <div>
-              Already have an account?{" "}
-              <Link href="/login" className="text-accent hover:underline font-medium">
-                Log in
-              </Link>
-            </div>
-            <div>
-              Joining as guest?{" "}
-              <Link href="/guest" className="text-muted-foreground hover:text-foreground underline">
+            {/* Guest Entry Fallback */}
+            <div className="text-center pt-2">
+              <span className="text-xs text-slate-500">Just joining a single call? </span>
+              <Link href="/guest" className="text-xs font-bold text-blue-600 hover:underline">
                 Continue as Guest
               </Link>
             </div>
-          </CardFooter>
-        </Card>
-      </motion.div>
+          </div>
+
+          {/* Bottom Mobile Switcher */}
+          <div className="text-center text-xs text-slate-400 py-3">
+            Nilaa RTC • Real-time communication
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
