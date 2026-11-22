@@ -342,7 +342,13 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between p-4 sm:p-8">
+    <div
+      className="min-h-screen text-slate-900 flex flex-col justify-between p-4 sm:p-8 bg-cover bg-top bg-no-repeat bg-fixed"
+      style={{
+        backgroundImage: "url('/background.jpg')",
+        backgroundColor: "#60A5FA",
+      }}
+    >
       {/* Top Header */}
       <div className="flex items-center justify-between max-w-5xl mx-auto w-full mb-6">
         <Link

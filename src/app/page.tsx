@@ -52,10 +52,10 @@ export default function LandingPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col selection:bg-sky-200 selection:text-sky-900"
+      className="min-h-screen flex flex-col selection:bg-sky-200 selection:text-sky-900 bg-cover bg-top bg-no-repeat bg-fixed"
       style={{
-        background:
-          "linear-gradient(to bottom, #60A5FA 0%, #93C5FD 20%, #BAE6FD 45%, #E0F7FF 70%, #FFFFFF 100%)",
+        backgroundImage: "url('/background.jpg')",
+        backgroundColor: "#60A5FA",
       }}
     >
       {/* Transparent Navbar - Completely seamless with landing page background */}

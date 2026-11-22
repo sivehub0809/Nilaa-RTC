@@ -606,15 +606,21 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
   };
 
   return (
-    <div className="relative h-screen w-screen bg-background overflow-hidden flex flex-col select-none">
+    <div
+      className="relative h-screen w-screen overflow-hidden flex flex-col select-none bg-cover bg-top bg-no-repeat"
+      style={{
+        backgroundImage: "url('/background.jpg')",
+        backgroundColor: "#60A5FA",
+      }}
+    >
       {/* Floating Reactions Overlay */}
       <ReactionsOverlay reactions={reactions} />
 
       {/* Join/Leave Presence Notifications */}
       <PresenceToast notifications={presenceNotifications} />
 
-      {/* Top Header Bar */}
-      <header className="h-14 border-b border-border bg-card/90 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-20">
+      {/* Top Header Bar - Floating Frosted Glass */}
+      <header className="h-14 border-b border-white/20 bg-white/40 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2 group">
             <div className="flex h-7 w-7 items-center justify-center rounded-full overflow-hidden">
@@ -679,9 +685,9 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
             )} gap-3 sm:gap-4 w-full h-full max-h-[85vh] items-center justify-center`}
           >
             {tracks.length === 0 ? (
-              <div className="relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-tile overflow-hidden bg-card border border-border flex flex-col items-center justify-center text-muted-foreground gap-2">
-                <Loader2 className="h-8 w-8 text-accent animate-spin" />
-                <span className="text-xs">Connecting audio & video...</span>
+              <div className="relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-2xl overflow-hidden bg-white/60 border border-white/60 backdrop-blur-md shadow-2xl shadow-sky-950/10 flex flex-col items-center justify-center text-slate-700 gap-2">
+                <Loader2 className="h-8 w-8 text-sky-500 animate-spin" />
+                <span className="text-xs font-medium">Connecting audio & video...</span>
               </div>
             ) : (
               tracks.map((trackRef) => {
@@ -697,7 +703,7 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
                 return (
                   <div
                     key={tileId}
-                    className={`relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-tile overflow-hidden bg-card border border-border flex items-center justify-center transition-all duration-200 group ${
+                    className={`relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-2xl overflow-hidden bg-slate-900/90 border border-white/30 shadow-2xl shadow-sky-950/20 flex items-center justify-center transition-all duration-200 group ${
                       isSpeaking ? "speaker-active-ring" : ""
                     }`}
                   >
@@ -712,26 +718,26 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
                         } transition-all duration-200`}
                       />
                     ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-card gap-2">
-                        <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-surface border border-border flex items-center justify-center text-foreground font-heading text-xl sm:text-2xl font-bold">
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/85 backdrop-blur-md gap-2">
+                        <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-heading text-xl sm:text-2xl font-bold shadow-lg">
                           {pName.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-xs text-muted-foreground">Camera Off</span>
+                        <span className="text-xs text-sky-100/70 font-light">Camera Off</span>
                       </div>
                     )}
 
                     {/* Participant Name & Status Pill */}
-                    <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-card/85 backdrop-blur-md px-2.5 py-1 rounded-btn border border-border/80 text-xs z-10">
-                      <span className="font-semibold text-foreground truncate max-w-[120px]">
+                    <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 text-xs z-10 text-white">
+                      <span className="font-medium text-white truncate max-w-[120px]">
                         {pName} {isLocal && "(You)"}
                       </span>
                       {handRaised && (
                         <Hand className="h-3 w-3 text-yellow-400 fill-yellow-400" />
                       )}
                       {trackRef.participant.isMicrophoneEnabled ? (
-                        <Mic className="h-3 w-3 text-accent" />
+                        <Mic className="h-3 w-3 text-sky-400" />
                       ) : (
-                        <MicOff className="h-3 w-3 text-destructive" />
+                        <MicOff className="h-3 w-3 text-red-400" />
                       )}
                     </div>
 
@@ -810,7 +816,7 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
               className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 lg:hidden"
               onClick={() => setActivePanel(null)}
             />
-            <aside className="fixed lg:relative right-0 top-0 bottom-0 z-40 w-full sm:w-96 lg:w-80 h-full bg-white border-l border-border shadow-2xl lg:shadow-none flex flex-col">
+            <aside className="fixed lg:relative right-0 top-0 bottom-0 z-40 w-full sm:w-96 lg:w-80 h-full bg-white/95 backdrop-blur-md border-l border-white/40 shadow-2xl lg:shadow-none flex flex-col">
               <ChatPanel
                 messages={messages}
                 onSendMessage={handleSendMessage}
@@ -828,7 +834,7 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
               className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 lg:hidden"
               onClick={() => setActivePanel(null)}
             />
-            <aside className="fixed lg:relative right-0 top-0 bottom-0 z-40 w-full sm:w-96 lg:w-80 h-full bg-white border-l border-border shadow-2xl lg:shadow-none flex flex-col">
+            <aside className="fixed lg:relative right-0 top-0 bottom-0 z-40 w-full sm:w-96 lg:w-80 h-full bg-white/95 backdrop-blur-md border-l border-white/40 shadow-2xl lg:shadow-none flex flex-col">
               <ParticipantsPanel
                 participants={participantListItems}
                 isCurrentUserHost={participantListItems[0]?.isSelf}
@@ -841,8 +847,8 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
         )}
       </div>
 
-      {/* Desktop Bottom Controls Bar */}
-      <footer className="h-20 border-t border-border bg-card/95 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-20">
+      {/* Desktop Bottom Controls Bar - Floating Frosted Glass */}
+      <footer className="h-20 border-t border-white/20 bg-white/45 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-20">
         <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
           <span className="font-medium text-foreground">{userName}</span>
           <span>•</span>
