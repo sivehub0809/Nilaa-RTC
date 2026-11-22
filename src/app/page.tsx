@@ -58,9 +58,9 @@ export default function LandingPage() {
           "linear-gradient(to bottom, #60A5FA 0%, #93C5FD 20%, #BAE6FD 45%, #E0F7FF 70%, #FFFFFF 100%)",
       }}
     >
-      {/* Light-themed Navbar override */}
-      <header className="sticky top-0 z-40 w-full border-b border-sky-200/70 bg-white/70 backdrop-blur-md">
-        <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+      {/* Light-themed Navbar override - Full Width to Edges */}
+      <header className="sticky top-0 z-40 w-full border-b border-sky-200/50 bg-white/40 backdrop-blur-md">
+        <div className="w-full flex h-16 items-center justify-between px-6 sm:px-10 lg:px-14">
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden transition-transform duration-200 group-hover:scale-105">
               <Image
@@ -120,26 +120,16 @@ export default function LandingPage() {
 
       <main className="flex-1 flex flex-col">
         {/* Hero Section */}
-        <section className="relative px-4 sm:px-6 pt-16 sm:pt-24 pb-20 max-w-5xl mx-auto w-full text-center flex flex-col items-center">
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/70 border border-sky-200 text-xs sm:text-sm text-sky-700 mb-6 shadow-sm backdrop-blur-sm"
-          >
-            <span className="flex h-2 w-2 rounded-full bg-sky-400 animate-pulse" />
-            <span>Next-Generation WebRTC Video Meetings</span>
-          </motion.div>
-
-          {/* Main Title */}
+        <section className="relative px-4 sm:px-6 pt-20 sm:pt-28 pb-20 max-w-4xl mx-auto w-full text-center flex flex-col items-center">
+          {/* Main Title - Thin, Airy & Refined per Reference */}
           <motion.h1
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="font-heading text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-gray-900 leading-[1.1] max-w-4xl"
+            className="font-heading text-4xl sm:text-5xl md:text-6xl font-light sm:font-normal tracking-tight text-slate-900 leading-[1.15] max-w-3xl"
           >
             Clear, fast video meetings.{" "}
-            <span className="text-sky-500 underline decoration-sky-300 decoration-wavy underline-offset-8">
+            <span className="text-sky-500 font-normal">
               Zero friction.
             </span>
           </motion.h1>
@@ -149,7 +139,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="mt-6 text-base sm:text-xl text-gray-500 max-w-2xl"
+            className="mt-6 text-sm sm:text-lg text-slate-500 font-normal max-w-xl leading-relaxed"
           >
             Connect instantly with up to 15 people. Crisp audio, sharp video,
             real-time emoji reactions, and seamless screen sharing right from your browser.
