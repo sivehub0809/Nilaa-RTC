@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Toaster } from "sonner";
+import { CookieBanner } from "@/components/ui/cookie-banner";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
@@ -58,6 +59,7 @@ export default function RootLayout({
             },
           }}
         />
+        <CookieBanner />
       </body>
     </html>
   );
