@@ -609,8 +609,8 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
     <div
       className="relative h-screen w-screen overflow-hidden flex flex-col select-none bg-cover bg-top bg-no-repeat"
       style={{
-        backgroundImage: "url('/background.jpg')",
-        backgroundColor: "#60A5FA",
+        backgroundImage: "url('/room-bg.jpg')",
+        backgroundColor: "#F8FAFC",
       }}
     >
       {/* Floating Reactions Overlay */}
@@ -703,10 +703,24 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
                 return (
                   <div
                     key={tileId}
-                    className={`relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-2xl overflow-hidden bg-slate-900/90 border border-white/30 shadow-2xl shadow-sky-950/20 flex items-center justify-center transition-all duration-200 group ${
+                    className={`relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-2xl overflow-hidden bg-slate-900/90 shadow-2xl shadow-sky-950/20 flex items-center justify-center transition-all duration-200 group ${
                       isSpeaking ? "speaker-active-ring" : ""
                     }`}
                   >
+                    {/* Thin blue rounded corner stroke + Running stroke when speaking */}
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-2xl z-20">
+                      <rect
+                        x="1.5"
+                        y="1.5"
+                        style={{ width: "calc(100% - 3px)", height: "calc(100% - 3px)" }}
+                        rx="15"
+                        ry="15"
+                        fill="none"
+                        stroke={isSpeaking ? "#38BDF8" : "rgba(56, 189, 248, 0.45)"}
+                        strokeWidth={isSpeaking ? "2.5" : "1.5"}
+                        className={isSpeaking ? "running-stroke" : ""}
+                      />
+                    </svg>
                     {/* Live Video Track */}
                     {hasVideo ? (
                       <VideoTrack

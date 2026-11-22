@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Video,
   Zap,
@@ -14,6 +14,8 @@ import {
   Keyboard,
   Users,
   User,
+  Menu,
+  X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { generateMeetingCode, normalizeMeetingCode } from "@/lib/utils";
@@ -25,6 +27,7 @@ export default function LandingPage() {
   const [meetingCode, setMeetingCode] = useState("");
   const [isStarting, setIsStarting] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -80,7 +83,8 @@ export default function LandingPage() {
             </div>
           </Link>
 
-          <nav className="flex items-center gap-2 sm:gap-3">
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-2.5">
             {user ? (
               <div className="flex items-center gap-2.5">
                 <Link href="/home">
@@ -89,7 +93,7 @@ export default function LandingPage() {
                     <span>Go to Meetings</span>
                   </button>
                 </Link>
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 border border-sky-200/60 text-xs font-normal text-slate-700">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 border border-sky-200/60 text-xs font-normal text-slate-700">
                   <User className="h-3.5 w-3.5 text-blue-600" />
                   <span className="truncate max-w-[140px]">
                     {user.user_metadata?.display_name || user.email?.split("@")[0]}
@@ -116,8 +120,134 @@ export default function LandingPage() {
               </>
             )}
           </nav>
+
+          {/* Mobile Hamburger Button */}
+          <div className="flex md:hidden items-center">
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="p-2.5 rounded-xl bg-white/80 hover:bg-white text-slate-800 border border-sky-200/70 shadow-xs backdrop-blur-sm transition-all cursor-pointer active:scale-95"
+              aria-label="Open mobile menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </header>
+
+      {/* Mobile Slide-Over Drawer (Right-to-Left ~30% - 40% on tablet, ~75% max-sm on mobile) */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs md:hidden"
+            />
+            <motion.aside
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 280 }}
+              className="fixed top-0 right-0 bottom-0 z-50 w-[78%] sm:w-[50%] md:w-[35%] max-w-sm bg-white/95 backdrop-blur-xl border-l border-sky-100 shadow-2xl flex flex-col justify-between p-6 md:hidden"
+            >
+              <div>
+                <div className="flex items-center justify-between pb-6 border-b border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-full overflow-hidden shadow-xs border border-white">
+                      <Image
+                        src="/nilaa-logo.jpg"
+                        alt="Nilaa RTC"
+                        width={32}
+                        height={32}
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                    <span className="font-sans text-base font-medium text-slate-800">
+                      Nilaa <span className="text-sky-600 font-normal">RTC</span>
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    aria-label="Close menu"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-3 pt-6">
+                  {user ? (
+                    <>
+                      <div className="p-3.5 rounded-2xl bg-sky-50/70 border border-sky-100 mb-2">
+                        <div className="text-[11px] font-medium uppercase tracking-wider text-sky-600">
+                          Signed in as
+                        </div>
+                        <div className="font-medium text-sm text-slate-900 truncate mt-0.5">
+                          {user.user_metadata?.display_name || user.email}
+                        </div>
+                      </div>
+
+                      <Link
+                        href="/home"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="w-full"
+                      >
+                        <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-600 text-white font-medium text-sm shadow-sm hover:bg-blue-700 transition-colors cursor-pointer">
+                          <Video className="h-4 w-4" />
+                          <span>Go to Meetings</span>
+                        </button>
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/guest"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="w-full"
+                      >
+                        <button className="w-full py-3.5 px-4 rounded-xl text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 font-normal text-sm transition-colors text-left flex items-center justify-between cursor-pointer">
+                          <span>Join as Guest</span>
+                          <ArrowRight className="h-4 w-4 text-slate-400" />
+                        </button>
+                      </Link>
+
+                      <Link
+                        href="/login"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="w-full"
+                      >
+                        <button className="w-full py-3.5 px-4 rounded-xl text-sky-950 bg-sky-50/70 hover:bg-sky-100/70 border border-sky-200/80 font-medium text-sm transition-colors text-left flex items-center justify-between cursor-pointer">
+                          <span>Log In</span>
+                          <ArrowRight className="h-4 w-4 text-sky-600" />
+                        </button>
+                      </Link>
+
+                      <Link
+                        href="/signup"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="w-full"
+                      >
+                        <button className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors text-left flex items-center justify-between cursor-pointer">
+                          <span>Sign Up</span>
+                          <ArrowRight className="h-4 w-4 text-white/80" />
+                        </button>
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-slate-100 text-[11px] text-slate-400 font-light text-center">
+                © 2026 Nilaa RTC • Real-time WebRTC conferencing
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
       <main className="flex-1 flex flex-col">
         {/* Hero Section */}

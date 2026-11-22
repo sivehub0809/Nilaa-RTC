@@ -345,8 +345,8 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
     <div
       className="min-h-screen text-slate-900 flex flex-col justify-between p-4 sm:p-8 bg-cover bg-top bg-no-repeat bg-fixed"
       style={{
-        backgroundImage: "url('/background.jpg')",
-        backgroundColor: "#60A5FA",
+        backgroundImage: "url('/room-bg.jpg')",
+        backgroundColor: "#F8FAFC",
       }}
     >
       {/* Top Header */}
@@ -374,7 +374,7 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
       <div className="max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center flex-1">
         {/* Left: Camera Preview (rounded-[24px]) */}
         <div className="lg:col-span-7 flex flex-col items-center w-full">
-          <div className="relative w-full aspect-video rounded-[24px] overflow-hidden bg-slate-200 border border-slate-200 shadow-xl flex items-center justify-center">
+          <div className="relative w-full aspect-video rounded-[24px] overflow-hidden bg-slate-900 border-[1.5px] border-sky-400/40 shadow-xl flex items-center justify-center">
             {/* Live Video Preview with dynamic orientation/mirroring */}
             <video
               ref={videoRef}

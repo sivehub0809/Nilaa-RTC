@@ -55,8 +55,23 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .speaker-active-ring {
-  border: 2px solid #3B82F6 !important;
-  box-shadow: 0 0 24px rgba(59, 130, 246, 0.35) !important;
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.45) !important;
+}
+
+/* Running stroke animation for speaking participants */
+@keyframes runningStroke {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -120;
+  }
+}
+
+.running-stroke {
+  stroke-dasharray: 26 13;
+  animation: runningStroke 1.2s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.85));
 }
 
 /* Respect reduce-motion preferences */
