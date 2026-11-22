@@ -49,6 +49,7 @@ import { ParticipantsPanel, ParticipantItem } from "@/components/meeting/partici
 import { MobileDrawer } from "@/components/meeting/mobile-drawer";
 import { PresenceToast, PresenceNotification } from "@/components/meeting/presence-toast";
 import { REACTION_EMOJIS } from "@/lib/constants";
+import { normalizeMeetingCode } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface RoomPageProps {
@@ -59,7 +60,7 @@ interface RoomPageProps {
 
 export default function MeetingRoomPage({ params }: RoomPageProps) {
   const resolvedParams = use(params);
-  const code = resolvedParams.code.toUpperCase();
+  const code = normalizeMeetingCode(resolvedParams.code) || resolvedParams.code.toUpperCase();
   const searchParams = useSearchParams();
   const router = useRouter();
 

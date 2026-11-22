@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { CopyCode } from "@/components/motion/copy-code";
 import { createClient } from "@/lib/supabase/client";
+import { normalizeMeetingCode } from "@/lib/utils";
 import { getCachedUserSettings } from "@/lib/user-settings";
 import { toast } from "sonner";
 
@@ -36,7 +37,7 @@ interface PreJoinPageProps {
 
 export default function PreJoinPage({ params }: PreJoinPageProps) {
   const resolvedParams = use(params);
-  const code = resolvedParams.code.toUpperCase();
+  const code = normalizeMeetingCode(resolvedParams.code) || resolvedParams.code.toUpperCase();
   const searchParams = useSearchParams();
   const router = useRouter();
 

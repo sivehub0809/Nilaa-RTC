@@ -3,8 +3,9 @@
 import * as React from "react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface CopyCodeProps {
   code: string;
@@ -15,19 +16,40 @@ interface CopyCodeProps {
 export function CopyCode({ code, className, showFullUrl = false }: CopyCodeProps) {
   const [copied, setCopied] = useState(false);
 
-  const displayValue = showFullUrl
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/${code}`
-    : code;
+  const fullUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/${code}`
+      : `https://nilaa-rtc.vercel.app/${code}`;
+
+  const displayValue = showFullUrl ? fullUrl : code;
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(displayValue);
+      // Always write the valid complete URL so mobile browsers won't throw "address is invalid"
+      await navigator.clipboard.writeText(fullUrl);
       setCopied(true);
+      toast.success("Meeting link copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleShare = async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: "Join Nilaa RTC Meeting",
+          text: `Join my video meeting on Nilaa RTC with code: ${code}`,
+          url: fullUrl,
+        });
+      } catch {
+        // User cancelled or share failed
+      }
+    } else {
+      handleCopy();
     }
   };
 

@@ -45,18 +45,37 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // Helper to ensure redirects always use https and proper host in production/reverse proxy
+  const createRedirect = (targetPath: string) => {
+    const url = new URL(targetPath, request.url);
+    const proto = request.headers.get("x-forwarded-proto");
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+
+    if (proto) {
+      url.protocol = `${proto}:`;
+    } else if (process.env.NODE_ENV === "production") {
+      url.protocol = "https:";
+    }
+
+    if (host) {
+      url.host = host;
+    }
+
+    const res = NextResponse.redirect(url, 307);
+    // Prevent iOS WebKit/Safari from aggressively caching redirects or downgrading protocols
+    res.headers.set("x-middleware-cache", "no-cache");
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    return res;
+  };
+
   // Protect /home routes if logged out
   if (!user && (pathname.startsWith("/home") || pathname.startsWith("/dashboard"))) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+    return createRedirect("/login");
   }
 
   // If logged in, redirect /login or /signup to /home
   if (user && (pathname === "/login" || pathname === "/signup")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/home";
-    return NextResponse.redirect(url);
+    return createRedirect("/home");
   }
 
   return supabaseResponse;
