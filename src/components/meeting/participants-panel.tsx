@@ -1,7 +1,6 @@
 "use client";
 
-import { X, Users, Mic, MicOff, Video, VideoOff, Crown, Hand, MoreVertical, Ban } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { X, Users, Mic, MicOff, Video, VideoOff, Crown, Hand, Ban } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export interface ParticipantItem {
@@ -31,62 +30,67 @@ export function ParticipantsPanel({
   onClose,
 }: ParticipantsPanelProps) {
   return (
-    <div className="flex flex-col h-full bg-card border-l border-border w-full sm:w-80 md:w-96">
+    <div className="flex flex-col h-full bg-white border-l border-slate-200 w-full select-none">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0">
         <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-accent" />
-          <h3 className="font-heading font-bold text-sm text-foreground">
+          <Users className="h-4 w-4 text-blue-600" />
+          <h3 className="font-heading font-bold text-sm text-slate-900">
             People
           </h3>
-          <span className="text-xs text-muted-foreground font-mono">
+          <span className="text-xs text-slate-400 font-mono">
             ({participants.length}/15)
           </span>
         </div>
-        <Button variant="ghost" size="iconSm" onClick={onClose}>
+        <button
+          onClick={onClose}
+          className="h-8 w-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors"
+          title="Close people panel"
+          aria-label="Close people panel"
+        >
           <X className="h-4 w-4" />
-        </Button>
+        </button>
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+      <div className="flex-1 overflow-y-auto p-3 space-y-1.5 bg-slate-50/50">
         {participants.map((p) => (
           <div
             key={p.id}
-            className="flex items-center justify-between p-2.5 rounded-btn bg-surface/60 hover:bg-surface border border-transparent hover:border-border transition-colors"
+            className="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/80 transition-colors shadow-xs"
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface border border-border text-xs font-bold text-foreground">
+              <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 border border-blue-200 text-xs font-bold text-blue-700">
                 {p.name.charAt(0).toUpperCase()}
                 {p.isHost && (
-                  <Crown className="absolute -top-1.5 -right-1 h-3.5 w-3.5 text-accent fill-accent" />
+                  <Crown className="absolute -top-1.5 -right-1 h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
                 )}
               </div>
 
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-semibold text-foreground truncate">
+                  <span className="text-xs font-semibold text-slate-800 truncate">
                     {p.name}
                   </span>
                   {p.isSelf && (
-                    <span className="text-[10px] text-muted-foreground">(You)</span>
+                    <span className="text-[10px] text-slate-400">(You)</span>
                   )}
                 </div>
 
                 <div className="flex items-center gap-1 mt-0.5">
                   {p.isHost && (
-                    <Badge variant="accent" className="text-[9px] px-1 py-0 h-3.5 font-normal">
+                    <Badge variant="accent" className="text-[9px] px-1 py-0 h-3.5 font-normal bg-blue-100 text-blue-700 border-blue-200">
                       Host
                     </Badge>
                   )}
                   {p.isGuest && (
-                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 font-normal">
+                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 font-normal border-slate-200 text-slate-500">
                       Guest
                     </Badge>
                   )}
                   {p.isHandRaised && (
-                    <span className="flex items-center gap-0.5 text-[10px] text-yellow-400 font-medium">
-                      <Hand className="h-3 w-3 fill-yellow-400" /> Raised Hand
+                    <span className="flex items-center gap-0.5 text-[10px] text-yellow-600 font-medium">
+                      <Hand className="h-3 w-3 fill-yellow-500" /> Raised Hand
                     </span>
                   )}
                 </div>
@@ -95,43 +99,39 @@ export function ParticipantsPanel({
 
             {/* Media status & Host actions */}
             <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-1 text-muted-foreground">
+              <div className="flex items-center gap-1 text-slate-400">
                 {p.isMuted ? (
-                  <MicOff className="h-3.5 w-3.5 text-destructive" />
+                  <MicOff className="h-3.5 w-3.5 text-red-500" />
                 ) : (
-                  <Mic className="h-3.5 w-3.5 text-accent" />
+                  <Mic className="h-3.5 w-3.5 text-blue-600" />
                 )}
                 {p.isVideoOff ? (
-                  <VideoOff className="h-3.5 w-3.5 text-destructive" />
+                  <VideoOff className="h-3.5 w-3.5 text-red-500" />
                 ) : (
-                  <Video className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Video className="h-3.5 w-3.5 text-slate-500" />
                 )}
               </div>
 
               {/* Host Control Actions */}
               {isCurrentUserHost && !p.isSelf && (
-                <div className="flex items-center gap-1 ml-1 border-l border-border pl-1.5">
+                <div className="flex items-center gap-1 ml-1 border-l border-slate-200 pl-1.5">
                   {!p.isMuted && onMuteParticipant && (
-                    <Button
-                      variant="ghost"
-                      size="iconSm"
-                      className="h-7 w-7 text-xs text-muted-foreground hover:text-destructive"
+                    <button
+                      className="h-7 w-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-red-600 transition-colors"
                       onClick={() => onMuteParticipant(p.id)}
                       title="Mute participant"
                     >
                       <MicOff className="h-3 w-3" />
-                    </Button>
+                    </button>
                   )}
                   {onRemoveParticipant && (
-                    <Button
-                      variant="ghost"
-                      size="iconSm"
-                      className="h-7 w-7 text-xs text-muted-foreground hover:text-destructive"
+                    <button
+                      className="h-7 w-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-red-600 transition-colors"
                       onClick={() => onRemoveParticipant(p.id)}
                       title="Remove participant"
                     >
                       <Ban className="h-3 w-3" />
-                    </Button>
+                    </button>
                   )}
                 </div>
               )}

@@ -65,12 +65,18 @@ export async function fetchUserSettings(): Promise<UserSettings> {
     if (!user) return cached;
 
     const meta = user.user_metadata || {};
+
+    // If an old oversized base64 avatar exists in user_metadata, clean it up to prevent 494 Request Header Too Large
+    if (meta.avatar_url && meta.avatar_url.startsWith("data:")) {
+      supabase.auth.updateUser({ data: { avatar_url: null } }).catch(() => {});
+    }
+
     const settings: UserSettings = {
       ...cached,
       displayName: meta.display_name || cached.displayName || user.email?.split("@")[0] || "",
       role: meta.role || cached.role || "Team Member",
       isPublic: meta.is_public !== undefined ? meta.is_public : cached.isPublic,
-      avatarUrl: meta.avatar_url || cached.avatarUrl || null,
+      avatarUrl: cached.avatarUrl || (meta.avatar_url && !meta.avatar_url.startsWith("data:") ? meta.avatar_url : null),
       autoMuteOnJoin: meta.auto_mute_on_join !== undefined ? meta.auto_mute_on_join : cached.autoMuteOnJoin,
       autoCameraOffOnJoin:
         meta.auto_camera_off_on_join !== undefined ? meta.auto_camera_off_on_join : cached.autoCameraOffOnJoin,
@@ -111,12 +117,15 @@ export async function saveUserSettings(settings: Partial<UserSettings>): Promise
     } = await supabase.auth.getUser();
 
     if (user) {
+      // NEVER put base64 data URLs into auth user_metadata cookies (exceeds Vercel 8KB header limit -> 494)
+      const safeCloudAvatar = updated.avatarUrl && !updated.avatarUrl.startsWith("data:") ? updated.avatarUrl : null;
+
       await supabase.auth.updateUser({
         data: {
           display_name: updated.displayName,
           role: updated.role,
           is_public: updated.isPublic,
-          avatar_url: updated.avatarUrl,
+          avatar_url: safeCloudAvatar,
           auto_mute_on_join: updated.autoMuteOnJoin,
           auto_camera_off_on_join: updated.autoCameraOffOnJoin,
           noise_cancellation: updated.noiseCancellation,
@@ -135,7 +144,7 @@ export async function saveUserSettings(settings: Partial<UserSettings>): Promise
           id: user.id,
           email: user.email || "",
           display_name: updated.displayName,
-          avatar_url: updated.avatarUrl,
+          avatar_url: safeCloudAvatar,
         });
       } catch {}
     }

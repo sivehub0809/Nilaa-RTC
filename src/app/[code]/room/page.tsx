@@ -640,6 +640,21 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
           {/* Connection Chip */}
           <ConnectionChip />
 
+          {/* Quick Mobile Chat Button */}
+          <Button
+            variant={activePanel === "chat" ? "accent" : "ghost"}
+            size="iconSm"
+            onClick={() => setActivePanel(activePanel === "chat" ? null : "chat")}
+            className="lg:hidden h-9 w-9 relative text-foreground"
+            title="Chat"
+            aria-label="Open chat"
+          >
+            <MessageSquare className="h-4 w-4" />
+            {messages.length > 1 && (
+              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-accent" />
+            )}
+          </Button>
+
           {/* Mobile Hamburger */}
           <Button
             variant="ghost"
@@ -786,28 +801,42 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
           </div>
         </main>
 
-        {/* Desktop Side Panel: Chat */}
+        {/* Side Panel: Chat (Desktop: Sidebar, Mobile: Full-height Slide Overlay) */}
         {activePanel === "chat" && (
-          <aside className="hidden lg:block h-full z-20">
-            <ChatPanel
-              messages={messages}
-              onSendMessage={handleSendMessage}
-              onClose={() => setActivePanel(null)}
+          <>
+            {/* Mobile backdrop */}
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 lg:hidden"
+              onClick={() => setActivePanel(null)}
             />
-          </aside>
+            <aside className="fixed lg:relative right-0 top-0 bottom-0 z-40 w-full sm:w-96 lg:w-80 h-full bg-white border-l border-border shadow-2xl lg:shadow-none flex flex-col">
+              <ChatPanel
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                onClose={() => setActivePanel(null)}
+              />
+            </aside>
+          </>
         )}
 
-        {/* Desktop Side Panel: Participants */}
+        {/* Side Panel: Participants (Desktop: Sidebar, Mobile: Full-height Slide Overlay) */}
         {activePanel === "participants" && (
-          <aside className="hidden lg:block h-full z-20">
-            <ParticipantsPanel
-              participants={participantListItems}
-              isCurrentUserHost={participantListItems[0]?.isSelf}
-              onMuteParticipant={handleMuteParticipant}
-              onRemoveParticipant={handleRemoveParticipant}
-              onClose={() => setActivePanel(null)}
+          <>
+            {/* Mobile backdrop */}
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 lg:hidden"
+              onClick={() => setActivePanel(null)}
             />
-          </aside>
+            <aside className="fixed lg:relative right-0 top-0 bottom-0 z-40 w-full sm:w-96 lg:w-80 h-full bg-white border-l border-border shadow-2xl lg:shadow-none flex flex-col">
+              <ParticipantsPanel
+                participants={participantListItems}
+                isCurrentUserHost={participantListItems[0]?.isSelf}
+                onMuteParticipant={handleMuteParticipant}
+                onRemoveParticipant={handleRemoveParticipant}
+                onClose={() => setActivePanel(null)}
+              />
+            </aside>
+          </>
         )}
       </div>
 
