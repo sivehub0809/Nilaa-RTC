@@ -28,7 +28,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -37,6 +37,15 @@ export default function LoginPage() {
         toast.error(error.message);
         setLoading(false);
         return;
+      }
+
+      // If user had an old bloated base64 avatar in cloud metadata, strip it immediately
+      if (data?.user?.user_metadata?.avatar_url?.startsWith("data:")) {
+        try {
+          await supabase.auth.updateUser({
+            data: { avatar_url: null },
+          });
+        } catch {}
       }
 
       toast.success("Welcome back to Nilaa RTC!");
