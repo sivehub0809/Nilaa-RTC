@@ -62,21 +62,21 @@ export default function GuestJoinPage() {
             <div className="h-7 w-7 rounded-full overflow-hidden">
               <Image src="/nilaa-logo.jpg" alt="Nilaa" width={28} height={28} className="object-cover" />
             </div>
-            <span className="font-heading font-extrabold text-sm text-slate-900">
-              Nilaa <span className="text-blue-600">RTC</span>
+            <span className="font-heading font-medium text-sm text-slate-900">
+              Nilaa <span className="text-blue-600 font-light">RTC</span>
             </span>
           </Link>
         </div>
 
         {/* Heading */}
-        <div className="text-center space-y-1.5">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 border border-blue-100 text-blue-600 mb-2">
-            <UserCheck className="h-7 w-7" />
+        <div className="text-center space-y-1">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 border border-blue-100 text-blue-600 mb-2">
+            <UserCheck className="h-6 w-6" />
           </div>
-          <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-light text-slate-900 tracking-tight">
             Join as Guest
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium">
+          <p className="text-xs sm:text-sm text-slate-500 font-light">
             No password or account required. Enter your name to enter the call.
           </p>
         </div>
@@ -84,11 +84,11 @@ export default function GuestJoinPage() {
         {/* Form */}
         <form onSubmit={handleGuestJoin} className="space-y-4 pt-2">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="text-xs font-normal uppercase tracking-wider text-slate-500">
               Your Display Name
             </label>
             <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               <input
                 type="text"
                 placeholder="e.g. Jordan"
@@ -96,24 +96,24 @@ export default function GuestJoinPage() {
                 onChange={(e) => setDisplayName(e.target.value)}
                 required
                 autoFocus
-                className="w-full h-13 pl-12 pr-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 text-sm sm:text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full h-12 pl-11 pr-4 rounded-xl border border-slate-200 bg-slate-50/60 text-slate-900 placeholder:text-slate-400 text-sm font-normal focus:bg-white focus:outline-none focus:ring-1.5 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="text-xs font-normal uppercase tracking-wider text-slate-500">
               Meeting Code
             </label>
             <div className="relative">
-              <Keyboard className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+              <Keyboard className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               <input
                 type="text"
                 placeholder="e.g. X7K9M2"
                 value={meetingCode}
                 onChange={(e) => setMeetingCode(e.target.value.toUpperCase())}
                 required
-                className="w-full h-13 pl-12 pr-4 uppercase font-mono tracking-wider rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 text-sm sm:text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full h-12 pl-11 pr-4 uppercase font-mono tracking-wider rounded-xl border border-slate-200 bg-slate-50/60 text-slate-900 placeholder:text-slate-400 text-sm font-normal focus:bg-white focus:outline-none focus:ring-1.5 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
           </div>
@@ -122,10 +122,10 @@ export default function GuestJoinPage() {
             <button
               type="submit"
               disabled={loading || !displayName.trim() || !meetingCode.trim()}
-              className="w-full h-13 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:opacity-60 text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all cursor-pointer"
+              className="w-full h-12 sm:h-13 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:opacity-60 text-white font-medium text-sm sm:text-base flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all cursor-pointer"
             >
               <span>Join Meeting</span>
-              <ArrowRight className="h-5 w-5" />
+              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </form>

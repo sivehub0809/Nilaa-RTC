@@ -60,208 +60,204 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-0 sm:p-6 md:p-10 text-slate-900 select-none">
-      {/* Main Full-Screen / Split Card Container */}
-      <div className="w-full max-w-5xl bg-white rounded-none sm:rounded-[32px] border-0 sm:border border-slate-200/80 shadow-none sm:shadow-2xl overflow-hidden min-h-screen sm:min-h-[640px] flex flex-col md:flex-row">
-        
-        {/* ================= LEFT SIDE (DESKTOP ARTWORK CARD) ================= */}
-        <div className="hidden md:flex flex-col justify-between w-1/2 bg-gradient-to-br from-blue-500 via-sky-400 to-indigo-500 p-10 lg:p-12 text-white relative overflow-hidden">
-          {/* Decorative circles */}
-          <div className="absolute -top-16 -left-16 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-white/15 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen w-full bg-white flex flex-col md:flex-row text-slate-900 select-none overflow-x-hidden">
+      {/* ================= LEFT SIDE (DESKTOP ARTWORK PANEL - FULL SCREEN EDGE-TO-EDGE) ================= */}
+      <div className="hidden md:flex flex-col justify-between w-1/2 lg:w-[46%] min-h-screen bg-gradient-to-br from-blue-500 via-sky-400 to-indigo-500 p-10 lg:p-14 text-white relative overflow-hidden">
+        {/* Decorative glow circles */}
+        <div className="absolute -top-16 -left-16 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-white/15 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Top Brand Pill */}
-          <div className="relative z-10 flex items-center gap-2.5">
-            <div className="h-10 w-10 rounded-full bg-white p-0.5 shadow-md flex items-center justify-center overflow-hidden">
+        {/* Top Brand Pill */}
+        <div className="relative z-10 flex items-center gap-2.5">
+          <div className="h-9 w-9 rounded-full bg-white p-0.5 shadow-sm flex items-center justify-center overflow-hidden">
+            <Image
+              src="/nilaa-logo.jpg"
+              alt="Nilaa"
+              width={34}
+              height={34}
+              className="object-cover w-full h-full"
+              priority
+            />
+          </div>
+          <span className="font-heading font-medium text-lg tracking-tight text-white">
+            Nilaa <span className="text-sky-100 font-light">RTC</span>
+          </span>
+        </div>
+
+        {/* Center Mascot & Art Display (Thinner typography & clean refined circle) */}
+        <div className="relative z-10 flex flex-col items-center justify-center my-auto py-6">
+          <div className="relative h-44 w-44 lg:h-52 lg:w-52 rounded-full bg-white/15 p-2.5 backdrop-blur-sm border border-white/20 shadow-xl flex items-center justify-center group">
+            <div className="h-full w-full rounded-full overflow-hidden bg-white shadow-inner flex items-center justify-center">
               <Image
                 src="/nilaa-logo.jpg"
-                alt="Nilaa"
-                width={38}
-                height={38}
-                className="object-cover w-full h-full"
+                alt="Nilaa Mascot"
+                width={210}
+                height={210}
+                className="object-cover w-full h-full scale-105 group-hover:scale-110 transition-transform duration-500"
                 priority
               />
             </div>
-            <span className="font-heading font-extrabold text-xl tracking-tight text-white drop-shadow-xs">
-              Nilaa <span className="text-sky-200">RTC</span>
-            </span>
           </div>
+          <h2 className="text-xl lg:text-2xl font-light text-white mt-6 text-center tracking-tight">
+            Create your account.
+          </h2>
+          <p className="text-sky-100/90 text-xs sm:text-sm text-center mt-2 max-w-xs font-light leading-relaxed">
+            Host instant video calls, customize your profile, and connect with zero friction.
+          </p>
+        </div>
 
-          {/* Center Mascot & Art Display */}
-          <div className="relative z-10 flex flex-col items-center justify-center my-auto py-8">
-            <div className="relative h-56 w-56 lg:h-64 lg:w-64 rounded-full bg-white/20 p-4 backdrop-blur-md border border-white/30 shadow-2xl flex items-center justify-center group">
-              <div className="h-full w-full rounded-full overflow-hidden bg-white shadow-inner flex items-center justify-center">
-                <Image
-                  src="/nilaa-logo.jpg"
-                  alt="Nilaa Mascot"
-                  width={240}
-                  height={240}
-                  className="object-cover w-full h-full scale-105 group-hover:scale-110 transition-transform duration-500"
-                  priority
-                />
-              </div>
-            </div>
-            <h2 className="font-heading text-2xl lg:text-3xl font-extrabold text-white mt-8 text-center tracking-tight drop-shadow-sm">
-              Create your account.
-            </h2>
-            <p className="text-sky-100 text-sm text-center mt-2 max-w-xs font-medium">
-              Host instant video calls, customize your profile, and connect with zero friction.
-            </p>
-          </div>
+        {/* Bottom Footer Note */}
+        <div className="relative z-10 text-xs text-sky-100/70 font-light">
+          © 2026 Nilaa RTC • Real-time WebRTC conferencing
+        </div>
+      </div>
 
-          {/* Bottom Footer Note */}
-          <div className="relative z-10 text-xs text-sky-100/80 font-medium">
-            © 2026 Nilaa RTC • Real-time WebRTC conferencing
+      {/* ================= RIGHT SIDE (FORM PANEL - FULL SCREEN EDGE-TO-EDGE) ================= */}
+      <div className="flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-16 bg-white min-h-screen">
+        {/* Top Navigation Row */}
+        <div className="flex items-center justify-between">
+          {/* Back button */}
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-normal text-slate-400 hover:text-slate-800 transition-colors py-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back</span>
+          </Link>
+
+          {/* Switch to Sign In */}
+          <div className="text-xs sm:text-sm text-slate-400 font-normal">
+            Already have an account?{" "}
+            <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium hover:underline">
+              Sign in
+            </Link>
           </div>
         </div>
 
-        {/* ================= RIGHT SIDE (FORM FOR MOBILE & DESKTOP) ================= */}
-        <div className="flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-14 bg-white min-h-screen sm:min-h-auto">
-          {/* Top Navigation Row */}
-          <div className="flex items-center justify-between">
-            {/* Back button */}
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors py-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back</span>
-            </Link>
-
-            {/* Switch to Sign In */}
-            <div className="text-xs sm:text-sm text-slate-500">
-              Already have an account?{" "}
-              <Link href="/login" className="text-blue-600 hover:text-blue-700 font-bold hover:underline">
-                Sign in
-              </Link>
+        {/* Form Content */}
+        <div className="max-w-md w-full mx-auto my-auto py-6 sm:py-8 space-y-6">
+          {/* Mobile Mascot Header */}
+          <div className="md:hidden flex flex-col items-center text-center space-y-2 mb-2">
+            <div className="h-14 w-14 rounded-full overflow-hidden border border-blue-200 p-0.5 shadow-sm">
+              <Image
+                src="/nilaa-logo.jpg"
+                alt="Nilaa"
+                width={56}
+                height={56}
+                className="object-cover w-full h-full rounded-full"
+                priority
+              />
             </div>
           </div>
 
-          {/* Form Content */}
-          <div className="max-w-md w-full mx-auto my-auto py-6 sm:py-8 space-y-6 sm:space-y-8">
-            {/* Mobile Mascot Header */}
-            <div className="md:hidden flex flex-col items-center text-center space-y-3 mb-2">
-              <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-blue-400 p-0.5 shadow-md">
-                <Image
-                  src="/nilaa-logo.jpg"
-                  alt="Nilaa"
-                  width={64}
-                  height={64}
-                  className="object-cover w-full h-full rounded-full"
-                  priority
+          {/* Headings (Thinner font size and weight as requested) */}
+          <div className="space-y-1 text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl font-light text-slate-900 tracking-tight">
+              Sign up
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 font-light">
+              Create your Nilaa RTC account in seconds.
+            </p>
+          </div>
+
+          {/* Input Form */}
+          <form onSubmit={handleSignUp} className="space-y-4">
+            {/* Full Name */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-normal uppercase tracking-wider text-slate-500">
+                Your Name
+              </label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Alex Morgan"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  required
+                  className="w-full h-12 pl-11 pr-4 rounded-xl border border-slate-200 bg-slate-50/60 text-slate-900 placeholder:text-slate-400 text-sm font-normal focus:bg-white focus:outline-none focus:ring-1.5 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
               </div>
             </div>
 
-            {/* Headings */}
-            <div className="space-y-1.5 text-center sm:text-left">
-              <h1 className="font-heading text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
-                Sign up
-              </h1>
-              <p className="text-sm text-slate-500 font-medium">
-                Create your Nilaa RTC account in seconds.
-              </p>
+            {/* Email Address */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-normal uppercase tracking-wider text-slate-500">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full h-12 pl-11 pr-4 rounded-xl border border-slate-200 bg-slate-50/60 text-slate-900 placeholder:text-slate-400 text-sm font-normal focus:bg-white focus:outline-none focus:ring-1.5 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+              </div>
             </div>
 
-            {/* Input Form */}
-            <form onSubmit={handleSignUp} className="space-y-5">
-              {/* Full Name */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Your Name
-                </label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    placeholder="Alex Morgan"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    required
-                    className="w-full h-13 pl-12 pr-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 text-sm sm:text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Email Address */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
-                  <input
-                    type="email"
-                    placeholder="name@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full h-13 pl-12 pr-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 text-sm sm:text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Password */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="At least 6 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full h-13 pl-12 pr-12 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 text-sm sm:text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors p-1"
-                    title={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Submit Button (Generous Touch Target for Phone & Desktop) */}
-              <div className="pt-2">
+            {/* Password */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-normal uppercase tracking-wider text-slate-500">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="At least 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full h-12 pl-11 pr-11 rounded-xl border border-slate-200 bg-slate-50/60 text-slate-900 placeholder:text-slate-400 text-sm font-normal focus:bg-white focus:outline-none focus:ring-1.5 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-13 sm:h-14 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:opacity-60 text-white font-bold text-base sm:text-lg flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all cursor-pointer"
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
+                  title={showPassword ? "Hide password" : "Show password"}
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      <span>Creating account...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Sign up</span>
-                      <ArrowRight className="h-5 w-5" />
-                    </>
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-            </form>
-
-            {/* Guest Entry Fallback */}
-            <div className="text-center pt-2">
-              <span className="text-xs text-slate-500">Just joining a single call? </span>
-              <Link href="/guest" className="text-xs font-bold text-blue-600 hover:underline">
-                Continue as Guest
-              </Link>
             </div>
-          </div>
 
-          {/* Bottom Mobile Switcher */}
-          <div className="text-center text-xs text-slate-400 py-3">
-            Nilaa RTC • Real-time communication
+            {/* Submit Button */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 sm:h-13 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:opacity-60 text-white font-medium text-sm sm:text-base flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Creating account...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Sign up</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+
+          {/* Guest Entry Fallback */}
+          <div className="text-center pt-2">
+            <span className="text-xs text-slate-400 font-light">Just joining a single call? </span>
+            <Link href="/guest" className="text-xs font-medium text-blue-600 hover:underline">
+              Continue as Guest
+            </Link>
           </div>
+        </div>
+
+        {/* Bottom Mobile Switcher */}
+        <div className="text-center text-xs text-slate-400 font-light py-2">
+          Nilaa RTC • Real-time communication
         </div>
       </div>
     </div>
