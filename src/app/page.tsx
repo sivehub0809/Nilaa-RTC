@@ -58,11 +58,11 @@ export default function LandingPage() {
           "linear-gradient(to bottom, #60A5FA 0%, #93C5FD 20%, #BAE6FD 45%, #E0F7FF 70%, #FFFFFF 100%)",
       }}
     >
-      {/* Light-themed Navbar override - Full Width to Edges */}
-      <header className="sticky top-0 z-40 w-full border-b border-sky-200/50 bg-white/40 backdrop-blur-md">
-        <div className="w-full flex h-16 items-center justify-between px-6 sm:px-10 lg:px-14">
+      {/* Transparent Navbar - Completely seamless with landing page background */}
+      <header className="w-full bg-transparent">
+        <div className="w-full flex h-18 sm:h-20 items-center justify-between px-6 sm:px-10 lg:px-14">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden transition-transform duration-200 group-hover:scale-105">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden transition-transform duration-200 group-hover:scale-105 shadow-xs">
               <Image
                 src="/nilaa-logo.jpg"
                 alt="Nilaa RTC Logo"
@@ -73,8 +73,8 @@ export default function LandingPage() {
               />
             </div>
             <div className="flex flex-col">
-              <span className="font-heading text-lg font-bold tracking-tight text-gray-800 flex items-center gap-1.5">
-                Nilaa <span className="text-sky-500 font-extrabold">RTC</span>
+              <span className="font-heading text-lg font-medium tracking-tight text-gray-800 flex items-center gap-1.5">
+                Nilaa <span className="text-sky-600 font-light">RTC</span>
               </span>
             </div>
           </Link>
@@ -83,12 +83,12 @@ export default function LandingPage() {
             {user ? (
               <div className="flex items-center gap-2.5">
                 <Link href="/home">
-                  <button className="text-xs sm:text-sm px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors font-semibold shadow-sm flex items-center gap-2">
+                  <button className="text-xs sm:text-sm px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm flex items-center gap-2 cursor-pointer">
                     <Video className="h-4 w-4" />
                     <span>Go to Meetings</span>
                   </button>
                 </Link>
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 border border-sky-200 text-xs font-medium text-slate-700">
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-sky-200/60 text-xs font-light text-slate-700">
                   <User className="h-3.5 w-3.5 text-blue-600" />
                   <span className="truncate max-w-[140px]">
                     {user.user_metadata?.display_name || user.email?.split("@")[0]}
@@ -98,17 +98,17 @@ export default function LandingPage() {
             ) : (
               <>
                 <Link href="/guest">
-                  <button className="text-xs sm:text-sm px-3.5 py-1.5 rounded-xl text-gray-700 hover:text-gray-950 hover:bg-white/60 transition-colors font-medium">
+                  <button className="text-xs sm:text-sm px-3.5 py-1.5 rounded-xl text-gray-700 hover:text-gray-950 hover:bg-white/40 transition-colors font-light cursor-pointer">
                     Join as Guest
                   </button>
                 </Link>
                 <Link href="/login">
-                  <button className="text-xs sm:text-sm px-3.5 py-1.5 rounded-xl border border-sky-300 text-sky-800 bg-white/50 hover:bg-white transition-colors font-semibold">
+                  <button className="text-xs sm:text-sm px-3.5 py-1.5 rounded-xl border border-sky-300/60 text-sky-900 bg-white/50 hover:bg-white/80 transition-colors font-normal shadow-xs cursor-pointer">
                     Log In
                   </button>
                 </Link>
                 <Link href="/signup">
-                  <button className="text-xs sm:text-sm px-4 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors font-semibold shadow-sm">
+                  <button className="text-xs sm:text-sm px-4 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm cursor-pointer">
                     Sign Up
                   </button>
                 </Link>
@@ -120,48 +120,24 @@ export default function LandingPage() {
 
       <main className="flex-1 flex flex-col">
         {/* Hero Section */}
-        <section className="relative px-4 sm:px-6 pt-20 sm:pt-28 pb-20 max-w-4xl mx-auto w-full text-center flex flex-col items-center">
-          {/* Main Title - Thin, Airy & Refined per Reference */}
-          <motion.h1
+        <section className="relative px-4 sm:px-6 pt-10 sm:pt-14 pb-20 max-w-4xl mx-auto w-full text-center flex flex-col items-center">
+          {/* Quick Actions Bar - Moved to top as sketched */}
+          <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="font-heading text-4xl sm:text-5xl md:text-6xl font-light sm:font-normal tracking-tight text-slate-900 leading-[1.15] max-w-3xl"
-          >
-            Clear, fast video meetings.{" "}
-            <span className="text-sky-500 font-normal">
-              Zero friction.
-            </span>
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mt-6 text-sm sm:text-lg text-slate-500 font-normal max-w-xl leading-relaxed"
-          >
-            Connect instantly with up to 15 people. Crisp audio, sharp video,
-            real-time emoji reactions, and seamless screen sharing right from your browser.
-          </motion.p>
-
-          {/* Quick Actions Bar */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mt-10 w-full max-w-xl flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 p-2 rounded-[20px] bg-white/80 border border-sky-200 backdrop-blur-md shadow-xl"
+            className="w-full max-w-xl flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 p-2 rounded-[22px] bg-white/85 border border-white/80 backdrop-blur-md shadow-2xl shadow-sky-900/10"
           >
             <button
               onClick={handleStartInstant}
               disabled={isStarting}
-              className="flex-1 flex items-center justify-center gap-2.5 text-base font-semibold px-5 py-3 rounded-[14px] bg-sky-500 text-white hover:bg-sky-600 disabled:opacity-60 transition-colors shadow-sm"
+              className="flex-1 flex items-center justify-center gap-2.5 text-sm sm:text-base font-medium px-5 py-3 rounded-[16px] bg-sky-500 hover:bg-sky-600 text-white disabled:opacity-60 transition-colors shadow-sm cursor-pointer"
             >
-              <Video className="h-5 w-5" />
+              <Video className="h-4.5 w-4.5" />
               {isStarting ? "Creating..." : "Start Instant Meeting"}
             </button>
 
-            <div className="hidden sm:block h-8 w-[1px] bg-sky-200 my-auto" />
+            <div className="hidden sm:block h-8 w-[1px] bg-sky-200/80 my-auto" />
 
             <form
               onSubmit={handleJoinWithCode}
@@ -174,13 +150,13 @@ export default function LandingPage() {
                   placeholder="Enter code (e.g. X7K9M2)"
                   value={meetingCode}
                   onChange={(e) => setMeetingCode(e.target.value.toUpperCase())}
-                  className="w-full h-11 pl-9 pr-3 uppercase tracking-wider font-mono text-xs sm:text-sm rounded-[12px] border border-sky-200 bg-white/90 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent"
+                  className="w-full h-11 pl-9 pr-3 uppercase tracking-wider font-mono text-xs sm:text-sm rounded-[14px] border border-sky-200/80 bg-white/95 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent font-light"
                 />
               </div>
               <button
                 type="submit"
                 disabled={!meetingCode.trim()}
-                className="shrink-0 px-4 h-11 rounded-[12px] bg-white border border-sky-300 text-sky-700 font-semibold text-sm hover:bg-sky-50 disabled:opacity-50 transition-colors"
+                className="shrink-0 px-4 h-11 rounded-[14px] bg-white border border-sky-200 text-sky-700 font-medium text-xs sm:text-sm hover:bg-sky-50 disabled:opacity-50 transition-colors shadow-xs cursor-pointer"
               >
                 Join
               </button>
@@ -191,36 +167,60 @@ export default function LandingPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="mt-4 text-xs text-gray-500 flex items-center gap-1.5"
+            transition={{ delay: 0.15 }}
+            className="mt-3 text-xs text-slate-600/80 font-light flex items-center gap-1.5"
           >
             <span>No account required.</span>
             <Link
               href="/guest"
-              className="text-sky-500 hover:underline font-medium inline-flex items-center gap-1"
+              className="text-sky-600 hover:underline font-normal inline-flex items-center gap-1"
             >
               Join as Guest <ArrowRight className="h-3 w-3" />
             </Link>
           </motion.div>
+
+          {/* Main Title - Thin, Airy & Refined, placed below Quick Actions as sketched */}
+          <motion.h1
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-14 sm:mt-16 font-heading text-4xl sm:text-5xl md:text-6xl font-light sm:font-normal tracking-tight text-slate-900 leading-[1.15] max-w-3xl"
+          >
+            Clear, fast video meetings.{" "}
+            <span className="text-sky-500 font-light sm:font-normal">
+              Zero friction.
+            </span>
+          </motion.h1>
+
+          {/* Subtitle / Description */}
+          <motion.p
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mt-5 text-sm sm:text-base md:text-lg text-slate-500 font-light max-w-xl leading-relaxed"
+          >
+            Connect instantly with up to 15 people. Crisp audio, sharp video,
+            real-time emoji reactions, and seamless screen sharing right from your browser.
+          </motion.p>
         </section>
 
         {/* Feature Highlights Grid */}
-        <section className="px-4 sm:px-6 py-16 border-t border-sky-100 max-w-6xl mx-auto w-full">
+        <section className="px-4 sm:px-6 py-16 border-t border-sky-100/60 max-w-6xl mx-auto w-full">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Card 1 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="rounded-[20px] bg-white/80 border border-sky-100 p-6 flex flex-col gap-3 hover:border-sky-300 hover:shadow-md transition-all backdrop-blur-sm"
+              transition={{ delay: 0.35 }}
+              className="rounded-[22px] bg-white/80 border border-white/90 p-6 sm:p-7 flex flex-col gap-3 hover:border-sky-200 hover:shadow-lg hover:shadow-sky-900/5 transition-all backdrop-blur-sm"
             >
-              <div className="h-10 w-10 rounded-xl bg-sky-100 flex items-center justify-center text-sky-500">
+              <div className="h-10 w-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-500">
                 <Zap className="h-5 w-5" />
               </div>
-              <h3 className="font-heading text-xl font-bold text-gray-900">
+              <h3 className="font-heading text-lg font-medium text-slate-800">
                 Instant & Fast
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-xs sm:text-sm text-slate-500 font-light leading-relaxed">
                 Join in under a second. No downloads, no waiting lobbies, and
                 no bloated software. Responsive button interactions throughout.
               </p>
@@ -230,16 +230,16 @@ export default function LandingPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="rounded-[20px] bg-white/80 border border-sky-100 p-6 flex flex-col gap-3 hover:border-sky-300 hover:shadow-md transition-all backdrop-blur-sm"
+              transition={{ delay: 0.4 }}
+              className="rounded-[22px] bg-white/80 border border-white/90 p-6 sm:p-7 flex flex-col gap-3 hover:border-sky-200 hover:shadow-lg hover:shadow-sky-900/5 transition-all backdrop-blur-sm"
             >
-              <div className="h-10 w-10 rounded-xl bg-sky-100 flex items-center justify-center text-sky-500">
+              <div className="h-10 w-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-500">
                 <Smile className="h-5 w-5" />
               </div>
-              <h3 className="font-heading text-xl font-bold text-gray-900">
+              <h3 className="font-heading text-lg font-medium text-slate-800">
                 Interactive & Lively
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-xs sm:text-sm text-slate-500 font-light leading-relaxed">
                 Live chat, spring-animated emoji reactions, raise hand, and
                 active speaker glow make every conversation engaging.
               </p>
@@ -249,16 +249,16 @@ export default function LandingPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="rounded-[20px] bg-white/80 border border-sky-100 p-6 flex flex-col gap-3 hover:border-sky-300 hover:shadow-md transition-all backdrop-blur-sm"
+              transition={{ delay: 0.45 }}
+              className="rounded-[22px] bg-white/80 border border-white/90 p-6 sm:p-7 flex flex-col gap-3 hover:border-sky-200 hover:shadow-lg hover:shadow-sky-900/5 transition-all backdrop-blur-sm"
             >
-              <div className="h-10 w-10 rounded-xl bg-sky-100 flex items-center justify-center text-sky-500">
+              <div className="h-10 w-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-500">
                 <Shield className="h-5 w-5" />
               </div>
-              <h3 className="font-heading text-xl font-bold text-gray-900">
+              <h3 className="font-heading text-lg font-medium text-slate-800">
                 Reliable & Clear
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-xs sm:text-sm text-slate-500 font-light leading-relaxed">
                 Built on LiveKit SFU architecture. Adapts stream quality
                 automatically to weak connections with sub-second latency.
               </p>
