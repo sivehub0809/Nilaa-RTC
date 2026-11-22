@@ -22,17 +22,18 @@ const config: Config = {
         },
         border: "#232938",
         input: "#1B2130",
-        ring: "#10FFE7",
+        ring: "#60A5FA",
         foreground: "#F2F4F8",
         muted: {
           DEFAULT: "#1B2130",
           foreground: "#9BA3B5",
         },
+        // Accent changed from cyan → sky blue (matches landing gradient)
         accent: {
-          DEFAULT: "#10FFE7",
+          DEFAULT: "#60A5FA",
           foreground: "#0B0D12",
-          hover: "#00E5CD",
-          glow: "rgba(16, 255, 231, 0.35)",
+          hover: "#3B82F6",
+          glow: "rgba(96, 165, 250, 0.35)",
         },
         destructive: {
           DEFAULT: "#E5484D",
@@ -52,8 +53,8 @@ const config: Config = {
         mono: ["var(--font-geist-mono)", "monospace"],
       },
       boxShadow: {
-        "speaker-glow": "0 0 0 2px #10FFE7, 0 0 24px rgba(16, 255, 231, 0.4)",
-        "cyan-glow": "0 0 20px rgba(16, 255, 231, 0.25)",
+        "speaker-glow": "0 0 0 2px #60A5FA, 0 0 24px rgba(96, 165, 250, 0.45)",
+        "cyan-glow": "0 0 20px rgba(96, 165, 250, 0.3)",
       },
     },
   },

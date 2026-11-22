@@ -66,3 +66,10 @@ Decisions confirmed by the product owner are marked **[confirmed]**.
 
 ### D-019: Typography & Font Family [confirmed]
 **Decision:** Use **Geist** (Vercel's official font family) via `geist/font/sans` and `geist/font/mono` for all headings, body text, and monospaced elements across Nilaa RTC.
+
+### D-020: Hashtag conventions [confirmed]
+**Decision:** The product owner uses hashtags to signal the type of work for each prompt:
+- `#uidesign` = UI / visual design changes only
+- `#system` = Product features, system logic, backend, infrastructure, bugs, and performance only
+When a hashtag is used, the agent stays strictly within that scope.
+

@@ -47,16 +47,16 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Glow utilities */
 .glow-cyan {
-  box-shadow: 0 0 20px rgba(16, 255, 231, 0.25);
+  box-shadow: 0 0 20px rgba(96, 165, 250, 0.3);
 }
 
 .glow-cyan-sm {
-  box-shadow: 0 0 10px rgba(16, 255, 231, 0.2);
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.22);
 }
 
 .speaker-active-ring {
-  border: 2px solid #10FFE7 !important;
-  box-shadow: 0 0 24px rgba(16, 255, 231, 0.4) !important;
+  border: 2px solid #60A5FA !important;
+  box-shadow: 0 0 24px rgba(96, 165, 250, 0.45) !important;
 }
 
 /* Respect reduce-motion preferences */

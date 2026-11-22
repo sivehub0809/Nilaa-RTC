@@ -3,6 +3,7 @@
 import { useEffect, useState, use, useMemo, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LiveKitRoom,
@@ -44,6 +45,7 @@ import { ReactionsOverlay, FloatingReaction } from "@/components/meeting/reactio
 import { ChatPanel, ChatMessage } from "@/components/meeting/chat-panel";
 import { ParticipantsPanel, ParticipantItem } from "@/components/meeting/participants-panel";
 import { MobileDrawer } from "@/components/meeting/mobile-drawer";
+import { PresenceToast, PresenceNotification } from "@/components/meeting/presence-toast";
 import { REACTION_EMOJIS } from "@/lib/constants";
 import { toast } from "sonner";
 
@@ -253,8 +255,62 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
 
-  // Video Fit Mode per tile ("contain" = show 100% full uncropped video; "cover" = crop/fill tile box)
+  // Video Fit Mode per tile
   const [fitModes, setFitModes] = useState<Record<string, "contain" | "cover">>({});
+
+  // Presence Notifications (join/leave popups)
+  const [presenceNotifications, setPresenceNotifications] = useState<PresenceNotification[]>([]);
+  const prevParticipantIds = useRef<Set<string>>(new Set());
+  const isFirstMount = useRef(true);
+
+  useEffect(() => {
+    const currentIds = new Set(participants.map((p) => p.identity));
+
+    if (isFirstMount.current) {
+      // On first mount, record existing participants without showing notifications
+      prevParticipantIds.current = currentIds;
+      isFirstMount.current = false;
+      return;
+    }
+
+    const newNotifications: PresenceNotification[] = [];
+
+    // Check who joined
+    for (const p of participants) {
+      if (!prevParticipantIds.current.has(p.identity) && !p.isLocal) {
+        newNotifications.push({
+          id: `${p.identity}-joined-${Date.now()}`,
+          name: p.name || p.identity,
+          type: "joined",
+        });
+      }
+    }
+
+    // Check who left
+    for (const prevId of prevParticipantIds.current) {
+      if (!currentIds.has(prevId)) {
+        const leftName = prevId.split("_")[0]; // strip session suffix we append
+        newNotifications.push({
+          id: `${prevId}-left-${Date.now()}`,
+          name: leftName,
+          type: "left",
+        });
+      }
+    }
+
+    prevParticipantIds.current = currentIds;
+
+    if (newNotifications.length > 0) {
+      setPresenceNotifications((prev) => [...prev, ...newNotifications]);
+
+      // Auto-dismiss each notification after 2.5s
+      newNotifications.forEach((n) => {
+        setTimeout(() => {
+          setPresenceNotifications((prev) => prev.filter((x) => x.id !== n.id));
+        }, 2500);
+      });
+    }
+  }, [participants]);
 
   const toggleFitMode = (tileId: string) => {
     setFitModes((prev) => {
@@ -278,7 +334,7 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
     },
   ]);
 
-  // LiveKit Data Channel for Real-time Chat, Reactions, Hand Raising
+  // LiveKit Data Channel
   const { send } = useDataChannel((msg) => {
     try {
       const decoded = new TextDecoder().decode(msg.payload);
@@ -360,7 +416,6 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
         setReactions((prev) => prev.filter((r) => r.id !== newReaction.id));
       }, 3200);
 
-      // Send to peers over LiveKit data channel
       try {
         const payload = JSON.stringify({
           type: "reaction",
@@ -420,7 +475,6 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
 
       setMessages((prev) => [...prev, newMsg]);
 
-      // Broadcast over LiveKit data channel
       try {
         const payload = JSON.stringify({
           type: "chat",
@@ -434,7 +488,6 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
         console.warn("Could not broadcast chat message:", err);
       }
 
-      // Persist to Supabase in background
       fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -448,14 +501,11 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
     [code, send, userName]
   );
 
-  // Host Controls: Mute Participant
+  // Host Controls
   const handleMuteParticipant = useCallback(
     (targetIdentity: string) => {
       try {
-        const payload = JSON.stringify({
-          type: "mute_request",
-          targetIdentity,
-        });
+        const payload = JSON.stringify({ type: "mute_request", targetIdentity });
         send(new TextEncoder().encode(payload), { reliable: true });
         toast("Mute request sent");
       } catch (err) {
@@ -465,14 +515,10 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
     [send]
   );
 
-  // Host Controls: Remove Participant
   const handleRemoveParticipant = useCallback(
     (targetIdentity: string) => {
       try {
-        const payload = JSON.stringify({
-          type: "remove_request",
-          targetIdentity,
-        });
+        const payload = JSON.stringify({ type: "remove_request", targetIdentity });
         send(new TextEncoder().encode(payload), { reliable: true });
         toast("Participant removed");
       } catch (err) {
@@ -490,12 +536,12 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
     router.push("/");
   };
 
-  // Convert LiveKit participants into list items for ParticipantsPanel
+  // Convert LiveKit participants into list items
   const participantListItems: ParticipantItem[] = useMemo(() => {
     return participants.map((p, idx) => ({
       id: p.identity,
       name: p.name || p.identity,
-      isHost: idx === 0, // earliest joiner is host
+      isHost: idx === 0,
       isSelf: p.isLocal,
       isMuted: !p.isMicrophoneEnabled,
       isVideoOff: !p.isCameraEnabled,
@@ -508,8 +554,7 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
     return new Set(speakingParticipants.map((p) => p.identity));
   }, [speakingParticipants]);
 
-  // Grid sizing logic according to spec:
-  // 1 = full, 2 = side by side, 3-4 = 2x2, 5-6 = 3x2, 7-9 = 3x3, 10-12 = 4x3, 13-15 = 5x3. Mobile = 2 columns.
+  // Grid sizing logic
   const getGridClasses = (count: number) => {
     if (count <= 1) return "grid-cols-1";
     if (count === 2) return "grid-cols-1 sm:grid-cols-2";
@@ -525,12 +570,21 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
       {/* Floating Reactions Overlay */}
       <ReactionsOverlay reactions={reactions} />
 
+      {/* Join/Leave Presence Notifications */}
+      <PresenceToast notifications={presenceNotifications} />
+
       {/* Top Header Bar */}
       <header className="h-14 border-b border-border bg-card/90 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="flex h-7 w-7 items-center justify-center rounded-btn bg-accent text-accent-foreground font-bold shadow-cyan-glow">
-              <VideoIcon className="h-4 w-4 fill-current" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-full overflow-hidden">
+              <Image
+                src="/nilaa-logo.jpg"
+                alt="Nilaa RTC"
+                width={28}
+                height={28}
+                className="object-cover w-full h-full"
+              />
             </div>
             <span className="font-heading text-sm font-bold tracking-tight text-foreground hidden sm:inline">
               Nilaa <span className="text-accent">RTC</span>
@@ -547,7 +601,7 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
           {/* Connection Chip */}
           <ConnectionChip />
 
-          {/* Mobile Hamburger Menu (Opens slide drawer from right to middle) */}
+          {/* Mobile Hamburger */}
           <Button
             variant="ghost"
             size="iconSm"
@@ -609,7 +663,7 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
                       </div>
                     )}
 
-                    {/* Participant Name & Status Pill (Bottom Left) */}
+                    {/* Participant Name & Status Pill */}
                     <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-card/85 backdrop-blur-md px-2.5 py-1 rounded-btn border border-border/80 text-xs z-10">
                       <span className="font-semibold text-foreground truncate max-w-[120px]">
                         {pName} {isLocal && "(You)"}
@@ -624,11 +678,18 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
                       )}
                     </div>
 
-                    {/* Top Right Actions: Active Speaker Badge & Fit/Fill Toggle */}
+                    {/* Top Right: Speaking Badge & Fit Toggle */}
                     <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
                       {isSpeaking && (
-                        <div className="flex items-center gap-1 bg-accent/20 border border-accent/40 text-accent px-2 py-0.5 rounded-full text-[10px] font-bold">
-                          <span className="h-1.5 w-1.5 rounded-full bg-accent animate-ping" />
+                        <div
+                          className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                          style={{
+                            background: "linear-gradient(135deg, rgba(96,165,250,0.25) 0%, rgba(147,197,253,0.18) 100%)",
+                            borderColor: "rgba(96,165,250,0.4)",
+                            color: "#93C5FD",
+                          }}
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-ping" />
                           <span>Speaking</span>
                         </div>
                       )}
@@ -781,7 +842,7 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
             </AnimatePresence>
           </div>
 
-          {/* Leave Call Button (Red #E5484D) */}
+          {/* Leave Call Button */}
           <Button
             variant="destructive"
             size="default"
@@ -822,7 +883,7 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
         </div>
       </footer>
 
-      {/* Mobile Drawer (Slides from Right Edge to Middle of Screen) */}
+      {/* Mobile Drawer */}
       <MobileDrawer
         isOpen={isMobileDrawerOpen}
         onClose={() => setIsMobileDrawerOpen(false)}
