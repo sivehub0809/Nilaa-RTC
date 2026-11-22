@@ -60,6 +60,7 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const [cropZoom, setCropZoom] = useState(1);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load settings when drawer opens
@@ -231,10 +232,21 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
     }
   };
 
-  // Select Avatar File -> Crop Modal
+  // Select Avatar File -> Validate Size (< 5MB) & Format -> Crop Modal
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file (JPEG, PNG, or WebP)");
+      return;
+    }
+
+    // Limit initial raw selection to 5MB to prevent device freeze
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Photo is too large. Please select an image under 5MB.");
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -246,19 +258,24 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
     e.target.value = "";
   };
 
-  // Fast Client-Side Circular Crop (< 15ms)
+  // Fast Client-Side Circular Crop + Cloud Storage Upload (WebP 192x192, < 10KB)
   const handleSaveCrop = () => {
     if (!rawImageSrc) return;
 
+    setUploadingAvatar(true);
     const img = new window.Image();
     img.src = rawImageSrc;
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      const size = 256;
+      // Standard avatar size: 192x192 is crisp on Retina screens and compiles to ~8KB
+      const size = 192;
       canvas.width = size;
       canvas.height = size;
       const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+      if (!ctx) {
+        setUploadingAvatar(false);
+        return;
+      }
 
       ctx.beginPath();
       ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
@@ -272,14 +289,50 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
 
       ctx.drawImage(img, sx, sy, drawSize, drawSize, 0, 0, size, size);
 
-      const croppedUrl = canvas.toDataURL("image/webp", 0.9);
-      setSettings((prev) => ({ ...prev, avatarUrl: croppedUrl }));
-      saveUserSettings({ avatarUrl: croppedUrl });
-      onProfileUpdated?.();
+      canvas.toBlob(
+        async (blob) => {
+          if (!blob) {
+            setUploadingAvatar(false);
+            return;
+          }
 
-      setCropModalOpen(false);
-      setRawImageSrc(null);
-      toast.success("Profile photo updated!");
+          let cloudAvatarUrl: string | null = null;
+
+          try {
+            // Upload to Supabase Storage via our secure API route
+            const formData = new FormData();
+            formData.append("file", blob, "avatar.webp");
+
+            const res = await fetch("/api/avatar/upload", {
+              method: "POST",
+              body: formData,
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              if (data.avatarUrl) {
+                cloudAvatarUrl = data.avatarUrl;
+              }
+            }
+          } catch (err) {
+            console.warn("Storage upload fallback:", err);
+          }
+
+          // Use cloud CDN URL if uploaded, fallback to local dataURL in localStorage only
+          const finalUrl = cloudAvatarUrl || canvas.toDataURL("image/webp", 0.85);
+
+          setSettings((prev) => ({ ...prev, avatarUrl: finalUrl }));
+          saveUserSettings({ avatarUrl: finalUrl });
+          onProfileUpdated?.();
+
+          setUploadingAvatar(false);
+          setCropModalOpen(false);
+          setRawImageSrc(null);
+          toast.success(cloudAvatarUrl ? "Profile photo saved to cloud!" : "Profile photo updated!");
+        },
+        "image/webp",
+        0.85
+      );
     };
   };
 
@@ -589,11 +642,11 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
               />
             </div>
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setCropModalOpen(false)} className="flex-1 text-xs">
+              <Button variant="ghost" size="sm" onClick={() => setCropModalOpen(false)} disabled={uploadingAvatar} className="flex-1 text-xs">
                 Cancel
               </Button>
-              <Button variant="accent" size="sm" onClick={handleSaveCrop} className="flex-1 text-xs font-semibold">
-                Crop & Save
+              <Button variant="accent" size="sm" onClick={handleSaveCrop} disabled={uploadingAvatar} className="flex-1 text-xs font-semibold">
+                {uploadingAvatar ? "Saving..." : "Crop & Save"}
               </Button>
             </div>
           </div>
