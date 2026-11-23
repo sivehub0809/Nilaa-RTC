@@ -31,12 +31,17 @@ export async function updateSession(request: NextRequest) {
             request,
           });
           cookiesToSet.forEach(({ name, value, options }) => {
-            const isDeleting = options?.maxAge === 0;
+            const isDeleting = options?.maxAge === 0 || value === "";
+            const expiryDate = isDeleting
+              ? new Date(0)
+              : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
             supabaseResponse.cookies.set(name, value, {
               ...options,
-              ...(isDeleting
-                ? { maxAge: 0 }
-                : { maxAge: 60 * 60 * 24 * 365, sameSite: "lax", path: "/" }),
+              path: "/",
+              sameSite: "lax",
+              maxAge: isDeleting ? 0 : 365 * 24 * 60 * 60,
+              expires: expiryDate,
             });
           });
         },
@@ -68,9 +73,14 @@ export async function updateSession(request: NextRequest) {
     }
 
     const res = NextResponse.redirect(url, 307);
-    // Preserve refreshed auth cookies across redirects
+    // Preserve refreshed auth cookies across redirects with explicit 1-year expiry
     supabaseResponse.cookies.getAll().forEach((cookie) => {
-      res.cookies.set(cookie.name, cookie.value, cookie);
+      res.cookies.set(cookie.name, cookie.value, {
+        path: "/",
+        sameSite: "lax",
+        maxAge: 365 * 24 * 60 * 60,
+        expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      });
     });
     // Prevent iOS WebKit/Safari from aggressively caching redirects or downgrading protocols
     res.headers.set("x-middleware-cache", "no-cache");

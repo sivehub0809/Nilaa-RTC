@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { fetchUserSettings } from "@/lib/user-settings";
+import { persistSessionBackup } from "@/lib/supabase/auth-helper";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -47,6 +48,10 @@ export default function LoginPage() {
             data: { avatar_url: null },
           });
         } catch {}
+      }
+
+      if (data?.session) {
+        persistSessionBackup(data.session);
       }
 
       // Fetch and cache the fresh profile immediately upon login

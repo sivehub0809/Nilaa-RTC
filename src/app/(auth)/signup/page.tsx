@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { saveUserSettings } from "@/lib/user-settings";
+import { persistSessionBackup } from "@/lib/supabase/auth-helper";
 import { toast } from "sonner";
 
 export default function SignUpPage() {
@@ -49,6 +50,10 @@ export default function SignUpPage() {
         toast.error(error.message);
         setLoading(false);
         return;
+      }
+
+      if (data?.session) {
+        persistSessionBackup(data.session);
       }
 
       // Pre-save display name to settings cache

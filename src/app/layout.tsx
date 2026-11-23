@@ -32,27 +32,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                if (typeof document !== 'undefined' && document.cookie) {
-                  var cookies = document.cookie.split(';');
-                  for (var i = 0; i < cookies.length; i++) {
-                    var c = cookies[i].trim();
-                    // Only clean up legacy bloated base64 data URLs, never valid Supabase auth session cookies
-                    if (c.indexOf('data%3Aimage') !== -1 || c.indexOf('data:image') !== -1) {
-                      var name = c.split('=')[0];
-                      document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0;';
-                    }
-                  }
-                }
-              } catch(e) {}
-            `,
-          }}
-        />
-      </head>
       <body className="antialiased bg-background text-foreground min-h-screen flex flex-col font-sans selection:bg-sky-100 selection:text-sky-900">
         {children}
         <Toaster

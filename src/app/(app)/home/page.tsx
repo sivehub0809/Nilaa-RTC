@@ -26,14 +26,31 @@ import { CopyCode } from "@/components/motion/copy-code";
 import { createClient } from "@/lib/supabase/client";
 import { generateMeetingCode, normalizeMeetingCode } from "@/lib/utils";
 import { getCachedUserSettings, fetchUserSettings } from "@/lib/user-settings";
+import { getOrRestoreSession, persistSessionBackup, clearSessionBackup } from "@/lib/supabase/auth-helper";
 import { GreenRoomDrawer } from "@/components/meeting/green-room-drawer";
 import { type User as SupabaseUser } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
 export default function HomePage() {
   const router = useRouter();
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
+  const [user, setUser] = useState<SupabaseUser | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const backupRaw = localStorage.getItem("nilaa_session_backup");
+        if (backupRaw) {
+          const parsed = JSON.parse(backupRaw);
+          return parsed.user || null;
+        }
+      } catch {}
+    }
+    return null;
+  });
+  const [loadingUser, setLoadingUser] = useState(() => {
+    if (typeof window !== "undefined") {
+      return !localStorage.getItem("nilaa_session_backup");
+    }
+    return true;
+  });
   const [joinCode, setJoinCode] = useState("");
   const [createdRoomCode, setCreatedRoomCode] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -53,37 +70,31 @@ export default function HomePage() {
   useEffect(() => {
     const supabase = createClient();
 
-    // 1. Restore and auto-refresh session if access token expired
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
+    // 1. Restore session across browser close / cookie wipe
+    getOrRestoreSession().then(async ({ user }) => {
+      if (user) {
+        setUser(user);
         setLoadingUser(false);
         const fresh = await fetchUserSettings();
         setUserProfile(fresh);
       } else {
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData?.user) {
-          setUser(userData.user);
-          setLoadingUser(false);
-          const fresh = await fetchUserSettings();
-          setUserProfile(fresh);
-        } else {
-          setLoadingUser(false);
-          router.push("/login");
-        }
+        setLoadingUser(false);
+        router.push("/login");
       }
     });
 
-    // 2. Listen to continuous auth state changes (token refresh, cross-tab updates)
+    // 2. Continuous auth subscription
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
+        persistSessionBackup(session);
         setUser(session.user);
         setLoadingUser(false);
         const fresh = await fetchUserSettings();
         setUserProfile(fresh);
       } else if (event === "SIGNED_OUT") {
+        clearSessionBackup();
         setUser(null);
         router.push("/login");
       }
@@ -96,6 +107,7 @@ export default function HomePage() {
 
   const handleSignOut = async () => {
     const supabase = createClient();
+    clearSessionBackup();
     await supabase.auth.signOut();
     toast.success("Signed out successfully");
     router.push("/login");

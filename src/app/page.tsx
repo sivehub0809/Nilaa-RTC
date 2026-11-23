@@ -21,6 +21,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { generateMeetingCode, normalizeMeetingCode } from "@/lib/utils";
 import { fetchUserSettings, getCachedUserSettings, type UserSettings } from "@/lib/user-settings";
+import { getOrRestoreSession, persistSessionBackup, clearSessionBackup } from "@/lib/supabase/auth-helper";
 import { type User as SupabaseUser } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
@@ -28,26 +29,30 @@ export default function LandingPage() {
   const router = useRouter();
   const [meetingCode, setMeetingCode] = useState("");
   const [isStarting, setIsStarting] = useState(false);
-  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const backupRaw = localStorage.getItem("nilaa_session_backup");
+        if (backupRaw) {
+          const parsed = JSON.parse(backupRaw);
+          return parsed.user || null;
+        }
+      } catch {}
+    }
+    return null;
+  });
   const [profile, setProfile] = useState<UserSettings | null>(() => getCachedUserSettings());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
 
-    // 1. Initial active session check (auto-refreshes if access token expired)
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
+    // 1. Initial session restoration (restores from cookies or persistent local backup)
+    getOrRestoreSession().then(async ({ user }) => {
+      if (user) {
+        setUser(user);
         const fresh = await fetchUserSettings();
         setProfile(fresh);
-      } else {
-        const { data } = await supabase.auth.getUser();
-        if (data?.user) {
-          setUser(data.user);
-          const fresh = await fetchUserSettings();
-          setProfile(fresh);
-        }
       }
     });
 
@@ -56,10 +61,12 @@ export default function LandingPage() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
+        persistSessionBackup(session);
         setUser(session.user);
         const fresh = await fetchUserSettings();
         setProfile(fresh);
       } else if (event === "SIGNED_OUT") {
+        clearSessionBackup();
         setUser(null);
         setProfile(null);
       }
