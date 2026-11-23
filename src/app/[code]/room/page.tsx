@@ -135,13 +135,13 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
     return (
       <div className="relative h-[100dvh] w-screen flex flex-col items-center justify-center p-6 text-slate-800 overflow-hidden">
         <div
-          className="fixed inset-0 pointer-events-none -z-10 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
+          className="fixed inset-0 pointer-events-none z-0 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
           style={{
             backgroundImage: "url('/room-bg.jpg')",
             backgroundColor: "#F8FAFC",
           }}
         />
-        <div className="p-8 rounded-3xl bg-white/75 backdrop-blur-xl border border-white/80 shadow-2xl shadow-sky-950/10 flex flex-col items-center justify-center gap-3.5 max-w-sm w-full text-center">
+        <div className="relative z-10 p-8 rounded-3xl bg-white/75 backdrop-blur-xl border border-white/80 shadow-2xl shadow-sky-950/10 flex flex-col items-center justify-center gap-3.5 max-w-sm w-full text-center">
           <CalmSpinner size="lg" text="Entering meeting..." />
           <p className="text-xs text-slate-500 font-light mt-0.5">Connecting to room {code}</p>
         </div>
@@ -682,7 +682,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
     <div className="relative h-[100dvh] w-screen overflow-hidden flex flex-col select-none touch-manipulation">
       {/* GPU-composited fixed background (Smooth 60fps with zero mobile repaints) */}
       <div
-        className="fixed inset-0 pointer-events-none -z-10 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
+        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
         style={{
           backgroundImage: "url('/room-bg.jpg')",
           backgroundColor: "#F8FAFC",

@@ -352,14 +352,14 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
     <div className="relative min-h-[100dvh] text-slate-900 flex flex-col justify-between p-4 sm:p-8 overflow-x-hidden">
       {/* GPU-composited fixed background (Smooth 60fps scrolling with zero mobile repaints) */}
       <div
-        className="fixed inset-0 pointer-events-none -z-10 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
+        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
         style={{
           backgroundImage: "url('/room-bg.jpg')",
           backgroundColor: "#F8FAFC",
         }}
       />
       {/* Top Header */}
-      <div className="flex items-center justify-between max-w-5xl mx-auto w-full mb-6">
+      <div className="relative z-10 flex items-center justify-between max-w-5xl mx-auto w-full mb-6">
         <Link
           href="/home"
           className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors group"
@@ -380,7 +380,7 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
       </div>
 
       {/* Main Pre-Join Container */}
-      <div className="max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center flex-1">
+      <div className="relative z-10 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center flex-1">
         {/* Left: Camera Preview (rounded-[24px]) */}
         <div className="lg:col-span-7 flex flex-col items-center w-full">
           <div className="relative w-full aspect-video rounded-[24px] overflow-hidden bg-slate-900 border-[1.5px] border-sky-400/40 shadow-xl flex items-center justify-center">

@@ -59,16 +59,19 @@ export default function LandingPage() {
 
   return (
     <div className="relative min-h-[100dvh] flex flex-col selection:bg-sky-200 selection:text-sky-900 overflow-x-hidden">
-      {/* GPU-composited fixed background (Smooth 60fps scrolling with zero mobile repaints) */}
+      {/* Ambient Sky Background (GPU-composited with zero mobile lag, always visible) */}
       <div
-        className="fixed inset-0 pointer-events-none -z-10 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
+        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
         style={{
           backgroundImage: "url('/background.jpg')",
-          backgroundColor: "#60A5FA",
+          backgroundColor: "#BAE6FD",
         }}
       />
+      {/* Soft airy lightening wash - gently lifts and softens the background for an effortless, lighter feel */}
+      <div className="fixed inset-0 pointer-events-none z-0 bg-white/20 sm:bg-white/15 backdrop-blur-[0.5px]" />
+
       {/* Transparent Navbar - Completely seamless with landing page background */}
-      <header className="w-full bg-transparent">
+      <header className="relative z-10 w-full bg-transparent">
         <div className="w-full flex h-20 sm:h-22 items-center justify-between px-6 sm:px-10 lg:px-14">
           <Link href="/" className="flex items-center gap-3 group">
             {/* Logo 1.2x larger (44px) */}
@@ -268,7 +271,7 @@ export default function LandingPage() {
         )}
       </AnimatePresence>
 
-      <main className="flex-1 flex flex-col">
+      <main className="relative z-10 flex-1 flex flex-col">
         {/* Hero Section */}
         <section className="relative px-4 sm:px-6 pt-10 sm:pt-14 pb-20 max-w-4xl mx-auto w-full text-center flex flex-col items-center">
           {/* Quick Actions Bar - Placed at Top per sketch */}
@@ -427,7 +430,7 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-sky-100 bg-white/60 py-6 px-4 text-center text-xs text-gray-400">
+      <footer className="relative z-10 border-t border-sky-100/70 bg-white/50 backdrop-blur-xs py-6 px-4 text-center text-xs text-slate-500">
         <p>© 2026 Nilaa RTC. Real-time video conferencing for professionals & friends.</p>
       </footer>
     </div>
