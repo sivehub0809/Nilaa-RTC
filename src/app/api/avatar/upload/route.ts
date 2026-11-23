@@ -42,10 +42,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No image file provided" }, { status: 400 });
     }
 
-    // 3. Strict size limit check (max 500 KB for cropped avatar)
-    if (file.size > 500 * 1024) {
+    // 3. Strict size limit check (max 2MB for cropped avatar)
+    if (file.size > 2 * 1024 * 1024) {
       return NextResponse.json(
-        { error: "Image exceeds 500KB size limit" },
+        { error: "Image exceeds 2MB size limit" },
         { status: 400 }
       );
     }

@@ -28,6 +28,7 @@ import {
   getCachedUserSettings,
   saveUserSettings,
 } from "@/lib/user-settings";
+import { compressRawImageFile, cropAvatarToBlob } from "@/lib/image-compression";
 import { toast } from "sonner";
 
 interface GreenRoomDrawerProps {
@@ -242,8 +243,8 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
     }
   };
 
-  // Select Avatar File -> Validate Size (< 5MB) & Format -> Crop Modal
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Select Avatar File -> Automatically downscale and compress any photo size -> Crop Modal
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -252,98 +253,72 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
       return;
     }
 
-    // Limit initial raw selection to 5MB to prevent device freeze
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Photo is too large. Please select an image under 5MB.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setRawImageSrc(reader.result as string);
+    try {
+      const toastId = toast.loading("Optimizing photo...");
+      // Auto-compress large phone/DSLR images down to a fast ~1000px canvas preview
+      const compressedDataUrl = await compressRawImageFile(file, 1200, 0.85);
+      toast.dismiss(toastId);
+      setRawImageSrc(compressedDataUrl);
       setCropZoom(1);
       setCropModalOpen(true);
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
+    } catch (err) {
+      console.warn("Image pre-compression failed, falling back to FileReader:", err);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setRawImageSrc(reader.result as string);
+        setCropZoom(1);
+        setCropModalOpen(true);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      e.target.value = "";
+    }
   };
 
-  // Fast Client-Side Circular Crop + Cloud Storage Upload (WebP 192x192, < 10KB)
-  const handleSaveCrop = () => {
+  // Ultra-optimized circular crop (WebP 192x192, ~8KB to 15KB) + Cloud Storage Upload
+  const handleSaveCrop = async () => {
     if (!rawImageSrc) return;
 
     setUploadingAvatar(true);
-    const img = new window.Image();
-    img.src = rawImageSrc;
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      // Standard avatar size: 192x192 is crisp on Retina screens and compiles to ~8KB
-      const size = 192;
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        setUploadingAvatar(false);
-        return;
+    try {
+      // 1. Generate ultra-lightweight circular WebP avatar blob (< 15KB)
+      const blob = await cropAvatarToBlob(rawImageSrc, cropZoom, 192, 0.85);
+
+      // 2. Upload to Supabase Storage via our secure API route
+      const formData = new FormData();
+      formData.append("file", blob, "avatar.webp");
+
+      const res = await fetch("/api/avatar/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to upload to storage");
       }
 
-      ctx.beginPath();
-      ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
+      const data = await res.json();
+      const cloudAvatarUrl = data.avatarUrl;
 
-      const minDim = Math.min(img.width, img.height);
-      const drawSize = minDim * cropZoom;
-      const sx = (img.width - drawSize) / 2;
-      const sy = (img.height - drawSize) / 2;
+      if (!cloudAvatarUrl) {
+        throw new Error("No avatar URL returned from server");
+      }
 
-      ctx.drawImage(img, sx, sy, drawSize, drawSize, 0, 0, size, size);
+      // 3. Save clean HTTPS public cloud URL (never save base64 to cookies/metadata)
+      setSettings((prev) => ({ ...prev, avatarUrl: cloudAvatarUrl }));
+      saveUserSettings({ avatarUrl: cloudAvatarUrl });
+      onProfileUpdated?.();
 
-      canvas.toBlob(
-        async (blob) => {
-          if (!blob) {
-            setUploadingAvatar(false);
-            return;
-          }
-
-          let cloudAvatarUrl: string | null = null;
-
-          try {
-            // Upload to Supabase Storage via our secure API route
-            const formData = new FormData();
-            formData.append("file", blob, "avatar.webp");
-
-            const res = await fetch("/api/avatar/upload", {
-              method: "POST",
-              body: formData,
-            });
-
-            if (res.ok) {
-              const data = await res.json();
-              if (data.avatarUrl) {
-                cloudAvatarUrl = data.avatarUrl;
-              }
-            }
-          } catch (err) {
-            console.warn("Storage upload fallback:", err);
-          }
-
-          // Use cloud CDN URL if uploaded, fallback to local dataURL in localStorage only
-          const finalUrl = cloudAvatarUrl || canvas.toDataURL("image/webp", 0.85);
-
-          setSettings((prev) => ({ ...prev, avatarUrl: finalUrl }));
-          saveUserSettings({ avatarUrl: finalUrl });
-          onProfileUpdated?.();
-
-          setUploadingAvatar(false);
-          setCropModalOpen(false);
-          setRawImageSrc(null);
-          toast.success(cloudAvatarUrl ? "Profile photo saved to cloud!" : "Profile photo updated!");
-        },
-        "image/webp",
-        0.85
-      );
-    };
+      setUploadingAvatar(false);
+      setCropModalOpen(false);
+      setRawImageSrc(null);
+      toast.success("Profile photo optimized & saved!");
+    } catch (err: any) {
+      console.error("Avatar upload error:", err);
+      toast.error(err.message || "Failed to save profile photo. Please try again.");
+      setUploadingAvatar(false);
+    }
   };
 
   // Save Settings
