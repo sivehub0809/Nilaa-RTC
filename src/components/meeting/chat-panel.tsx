@@ -78,11 +78,6 @@ export function ChatPanel({ messages, onSendMessage, onClose }: ChatPanelProps) 
                 <span className="font-semibold text-slate-700">
                   {msg.isSelf ? "You" : msg.senderName}
                 </span>
-                {msg.isGuest && (
-                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-slate-200 text-slate-500">
-                    Guest
-                  </Badge>
-                )}
                 <span>•</span>
                 <span>{msg.timestamp}</span>
               </div>

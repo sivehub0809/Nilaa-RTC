@@ -68,8 +68,8 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
   const userName =
     searchParams.get("name") ||
     (typeof window !== "undefined"
-      ? sessionStorage.getItem("nilaa_user_name") || "Guest"
-      : "Guest");
+      ? sessionStorage.getItem("nilaa_user_name") || "Participant"
+      : "Participant");
 
   const initialVideo = searchParams.get("video") !== "false";
   const initialAudio = searchParams.get("audio") !== "false";

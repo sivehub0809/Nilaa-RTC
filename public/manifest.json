@@ -11,22 +11,22 @@
   "categories": ["utilities", "productivity", "social"],
   "icons": [
     {
-      "src": "/dashboard-icon.png",
-      "sizes": "360x360",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/nilaa-logo.jpg",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/nilaa-logo.jpg",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [

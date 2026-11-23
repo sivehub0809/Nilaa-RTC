@@ -3,8 +3,8 @@ import { AccessToken } from "livekit-server-sdk";
 
 export async function GET(req: NextRequest) {
   const room = req.nextUrl.searchParams.get("room");
-  const rawUsername = req.nextUrl.searchParams.get("username") || "Guest";
-  const username = rawUsername.trim() || "Guest";
+  const rawUsername = req.nextUrl.searchParams.get("username") || "Participant";
+  const username = rawUsername.trim() || "Participant";
 
   if (!room) {
     return NextResponse.json(

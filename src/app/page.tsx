@@ -139,7 +139,6 @@ export default function LandingPage() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-2.5">
-            <InstallPwaButton variant="nav" />
             {user ? (
               <div className="flex items-center gap-2.5">
                 <Link href="/home">
@@ -167,14 +166,10 @@ export default function LandingPage() {
                     </span>
                   )}
                 </div>
+                <InstallPwaButton variant="nav" />
               </div>
             ) : (
               <>
-                <Link href="/guest">
-                  <button className="text-xs sm:text-sm px-3.5 py-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-white/50 transition-colors font-normal cursor-pointer">
-                    Join as Guest
-                  </button>
-                </Link>
                 <Link href="/login">
                   <button className="text-xs sm:text-sm px-3.5 py-2 rounded-xl border border-sky-300/70 text-sky-900 bg-white/60 hover:bg-white/90 transition-colors font-medium shadow-xs cursor-pointer">
                     Log In
@@ -185,6 +180,7 @@ export default function LandingPage() {
                     Sign Up
                   </button>
                 </Link>
+                <InstallPwaButton variant="nav" />
               </>
             )}
           </nav>
@@ -291,27 +287,12 @@ export default function LandingPage() {
                     </>
                   ) : (
                     <>
-                      <div className="pb-1">
-                        <InstallPwaButton className="w-full justify-center" />
-                      </div>
-
-                      <Link
-                        href="/guest"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="w-full"
-                      >
-                        <button className="w-full py-3.5 px-4 rounded-xl text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 font-normal text-sm transition-colors text-left flex items-center justify-between cursor-pointer">
-                          <span>Join as Guest</span>
-                          <ArrowRight className="h-4 w-4 text-slate-400" />
-                        </button>
-                      </Link>
-
                       <Link
                         href="/login"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="w-full"
                       >
-                        <button className="w-full py-3.5 px-4 rounded-xl text-sky-950 bg-sky-50/70 hover:bg-sky-100/70 border border-sky-200/80 font-medium text-sm transition-colors text-left flex items-center justify-between cursor-pointer">
+                        <button className="w-full py-3 px-4 rounded-xl text-sky-950 bg-sky-50/70 hover:bg-sky-100/70 border border-sky-200/80 font-medium text-sm transition-colors text-left flex items-center justify-between cursor-pointer">
                           <span>Log In</span>
                           <ArrowRight className="h-4 w-4 text-sky-600" />
                         </button>
@@ -322,11 +303,15 @@ export default function LandingPage() {
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="w-full"
                       >
-                        <button className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors text-left flex items-center justify-between cursor-pointer">
+                        <button className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors text-left flex items-center justify-between cursor-pointer">
                           <span>Sign Up</span>
                           <ArrowRight className="h-4 w-4 text-white/80" />
                         </button>
                       </Link>
+
+                      <div className="pt-2">
+                        <InstallPwaButton className="w-full justify-center" />
+                      </div>
                     </>
                   )}
                 </div>
@@ -392,22 +377,6 @@ export default function LandingPage() {
                 Join
               </button>
             </form>
-          </motion.div>
-
-          {/* Guest joining note */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.15 }}
-            className="mt-3.5 text-xs text-slate-700/80 font-normal flex items-center gap-1.5"
-          >
-            <span>No account required.</span>
-            <Link
-              href="/guest"
-              className="text-sky-700 hover:underline font-medium inline-flex items-center gap-1"
-            >
-              Join as Guest <ArrowRight className="h-3 w-3" />
-            </Link>
           </motion.div>
 
           {/* Main Title - Geist font, Medium weight, Balanced Size */}

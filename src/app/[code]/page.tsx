@@ -84,14 +84,10 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
       }
     });
 
-    // 3. Fallback to guest name if passed in URL or sessionStorage
-    const guestName =
-      searchParams.get("name") ||
-      (typeof window !== "undefined"
-        ? sessionStorage.getItem("nilaa_guest_name")
-        : "");
-    if (guestName && !cached.displayName) {
-      setDisplayName(guestName);
+    // 3. Fallback to name param in URL if provided
+    const paramName = searchParams.get("name");
+    if (paramName && !cached.displayName) {
+      setDisplayName(paramName);
     }
   }, [searchParams]);
 

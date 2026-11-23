@@ -83,11 +83,6 @@ export function ParticipantsPanel({
                       Host
                     </Badge>
                   )}
-                  {p.isGuest && (
-                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 font-normal border-slate-200 text-slate-500">
-                      Guest
-                    </Badge>
-                  )}
                   {p.isHandRaised && (
                     <span className="flex items-center gap-0.5 text-[10px] text-yellow-600 font-medium">
                       <Hand className="h-3 w-3 fill-yellow-500" /> Raised Hand

@@ -244,14 +244,6 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
-
-          {/* Guest Entry Fallback */}
-          <div className="text-center pt-2">
-            <span className="text-xs text-slate-400 font-light">Just joining a single call? </span>
-            <Link href="/guest" className="text-xs font-medium text-blue-600 hover:underline">
-              Continue as Guest
-            </Link>
-          </div>
         </div>
 
         {/* Bottom Mobile Switcher */}
