@@ -26,6 +26,7 @@ import {
   UserSettings,
   DEFAULT_USER_SETTINGS,
   getCachedUserSettings,
+  fetchUserSettings,
   saveUserSettings,
 } from "@/lib/user-settings";
 import { compressRawImageFile, cropAvatarToBlob } from "@/lib/image-compression";
@@ -75,10 +76,16 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
       setIsMirrored(cached.mirrorVideo);
       startPreview();
 
+      // Fetch fresh profile & settings from Supabase profiles table
+      fetchUserSettings().then((fresh) => {
+        setSettings(fresh);
+        setIsMirrored(fresh.mirrorVideo);
+      });
+
       const supabase = createClient();
-      supabase.auth.getUser().then(({ data }) => {
-        if (data?.user?.email) {
-          setUserEmail(data.user.email);
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user?.email) {
+          setUserEmail(session.user.email);
         }
       });
     } else {
@@ -307,7 +314,7 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
 
       // 3. Save clean HTTPS public cloud URL (never save base64 to cookies/metadata)
       setSettings((prev) => ({ ...prev, avatarUrl: cloudAvatarUrl }));
-      saveUserSettings({ avatarUrl: cloudAvatarUrl });
+      await saveUserSettings({ avatarUrl: cloudAvatarUrl });
       onProfileUpdated?.();
 
       setUploadingAvatar(false);

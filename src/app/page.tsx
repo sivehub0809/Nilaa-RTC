@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { generateMeetingCode, normalizeMeetingCode } from "@/lib/utils";
+import { fetchUserSettings, getCachedUserSettings, type UserSettings } from "@/lib/user-settings";
 import { type User as SupabaseUser } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
@@ -28,13 +29,45 @@ export default function LandingPage() {
   const [meetingCode, setMeetingCode] = useState("");
   const [isStarting, setIsStarting] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [profile, setProfile] = useState<UserSettings | null>(() => getCachedUserSettings());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
+
+    // 1. Initial active session check (auto-refreshes if access token expired)
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+        const fresh = await fetchUserSettings();
+        setProfile(fresh);
+      } else {
+        const { data } = await supabase.auth.getUser();
+        if (data?.user) {
+          setUser(data.user);
+          const fresh = await fetchUserSettings();
+          setProfile(fresh);
+        }
+      }
     });
+
+    // 2. Continuous auth subscription
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        const fresh = await fetchUserSettings();
+        setProfile(fresh);
+      } else if (event === "SIGNED_OUT") {
+        setUser(null);
+        setProfile(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleStartInstant = () => {
@@ -102,15 +135,21 @@ export default function LandingPage() {
                     <span>Go to Meetings</span>
                   </button>
                 </Link>
-                <div className="flex flex-col justify-center px-3 py-1 rounded-xl bg-white/80 border border-sky-200/60 text-xs">
-                  <div className="flex items-center gap-1.5 font-medium text-slate-800">
-                    <User className="h-3 w-3 text-blue-600 shrink-0" />
+                <div className="flex flex-col justify-center px-3 py-1.5 rounded-xl bg-white/80 border border-sky-200/60 text-xs">
+                  <div className="flex items-center gap-2 font-medium text-slate-800">
+                    <div className="h-5 w-5 rounded-full overflow-hidden bg-sky-100 flex items-center justify-center text-[10px] text-blue-600 font-bold shrink-0 border border-white">
+                      {profile?.avatarUrl ? (
+                        <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="h-3 w-3 text-blue-600 shrink-0" />
+                      )}
+                    </div>
                     <span className="truncate max-w-[130px]">
-                      {user.user_metadata?.display_name || user.email?.split("@")[0]}
+                      {profile?.displayName || user.user_metadata?.display_name || user.email?.split("@")[0]}
                     </span>
                   </div>
                   {user.email && (
-                    <span className="text-[10px] text-slate-500 font-normal truncate max-w-[130px] pl-4">
+                    <span className="text-[10px] text-slate-500 font-normal truncate max-w-[130px] pl-7">
                       {user.email}
                     </span>
                   )}
@@ -202,11 +241,20 @@ export default function LandingPage() {
                         <div className="text-[11px] font-medium uppercase tracking-wider text-sky-600">
                           Signed in as
                         </div>
-                        <div className="font-semibold text-sm text-slate-900 truncate mt-0.5">
-                          {user.user_metadata?.display_name || user.email?.split("@")[0]}
+                        <div className="flex items-center gap-2.5 mt-1.5">
+                          <div className="h-7 w-7 rounded-full overflow-hidden bg-white border border-sky-200 flex items-center justify-center text-xs font-bold text-blue-600 shrink-0">
+                            {profile?.avatarUrl ? (
+                              <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              <span>{(profile?.displayName || user.user_metadata?.display_name || user.email || "U").charAt(0).toUpperCase()}</span>
+                            )}
+                          </div>
+                          <div className="font-semibold text-sm text-slate-900 truncate">
+                            {profile?.displayName || user.user_metadata?.display_name || user.email?.split("@")[0]}
+                          </div>
                         </div>
                         {user.email && (
-                          <div className="text-xs text-slate-500 font-normal truncate mt-0.5 flex items-center gap-1.5">
+                          <div className="text-xs text-slate-500 font-normal truncate mt-1 flex items-center gap-1.5 pl-0.5">
                             <Mail className="h-3 w-3 text-slate-400 shrink-0" />
                             <span className="truncate">{user.email}</span>
                           </div>

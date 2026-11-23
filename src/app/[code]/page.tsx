@@ -26,7 +26,7 @@ import { Card } from "@/components/ui/card";
 import { CopyCode } from "@/components/motion/copy-code";
 import { createClient } from "@/lib/supabase/client";
 import { normalizeMeetingCode } from "@/lib/utils";
-import { getCachedUserSettings } from "@/lib/user-settings";
+import { getCachedUserSettings, fetchUserSettings } from "@/lib/user-settings";
 import { CalmSpinner } from "@/components/ui/calm-spinner";
 import { toast } from "sonner";
 
@@ -69,23 +69,30 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
 
-  // Initialize display name from auth or guest params
+  // Initialize display name from cached/cloud profile or guest params
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user?.user_metadata?.display_name) {
-        setDisplayName(data.user.user_metadata.display_name);
-      } else if (data.user?.email) {
-        setDisplayName(data.user.email.split("@")[0]);
-      } else {
-        const guestName =
-          searchParams.get("name") ||
-          (typeof window !== "undefined"
-            ? sessionStorage.getItem("nilaa_guest_name")
-            : "");
-        if (guestName) setDisplayName(guestName);
+    // 1. Initial cached profile name
+    const cached = getCachedUserSettings();
+    if (cached.displayName) {
+      setDisplayName(cached.displayName);
+    }
+
+    // 2. Fetch fresh profile name from Supabase profiles table
+    fetchUserSettings().then((fresh) => {
+      if (fresh.displayName) {
+        setDisplayName(fresh.displayName);
       }
     });
+
+    // 3. Fallback to guest name if passed in URL or sessionStorage
+    const guestName =
+      searchParams.get("name") ||
+      (typeof window !== "undefined"
+        ? sessionStorage.getItem("nilaa_guest_name")
+        : "");
+    if (guestName && !cached.displayName) {
+      setDisplayName(guestName);
+    }
   }, [searchParams]);
 
   // Audio level meter setup

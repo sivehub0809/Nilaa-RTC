@@ -9,6 +9,7 @@ import { Mail, Lock, Eye, EyeOff, ArrowLeft, ArrowRight, Loader2, Sparkles } fro
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
+import { fetchUserSettings } from "@/lib/user-settings";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -47,6 +48,11 @@ export default function LoginPage() {
           });
         } catch {}
       }
+
+      // Fetch and cache the fresh profile immediately upon login
+      try {
+        await fetchUserSettings();
+      } catch {}
 
       toast.success("Welcome back to Nilaa RTC!");
       router.push("/home");

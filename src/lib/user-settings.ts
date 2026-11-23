@@ -58,25 +58,42 @@ export async function fetchUserSettings(): Promise<UserSettings> {
 
   try {
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    
+    // First try getUser, fallback to getSession
+    let user = (await supabase.auth.getUser()).data.user;
+    if (!user) {
+      user = (await supabase.auth.getSession()).data.session?.user ?? null;
+    }
 
     if (!user) return cached;
 
     const meta = user.user_metadata || {};
 
-    // If an old oversized base64 avatar exists in user_metadata, clean it up to prevent 494 Request Header Too Large
-    if (meta.avatar_url && meta.avatar_url.startsWith("data:")) {
-      supabase.auth.updateUser({ data: { avatar_url: null } }).catch(() => {});
+    // Fetch directly from public.profiles table (Primary source of truth for persistent user profile)
+    let dbProfile: { display_name?: string | null; avatar_url?: string | null; role?: string | null } | null = null;
+    try {
+      const { data } = await (supabase.from("profiles") as any)
+        .select("display_name, avatar_url, role")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (data) dbProfile = data as { display_name?: string | null; avatar_url?: string | null; role?: string | null };
+    } catch (err) {
+      console.warn("Could not fetch from profiles table:", err);
     }
+
+    // Determine safe, persistent avatar URL (never base64)
+    const rawAvatar = dbProfile?.avatar_url || meta.avatar_url || cached.avatarUrl;
+    const safeAvatar = rawAvatar && !rawAvatar.startsWith("data:") ? rawAvatar : null;
+
+    // Determine display name
+    const finalDisplayName = dbProfile?.display_name || meta.display_name || cached.displayName || user.email?.split("@")[0] || "";
 
     const settings: UserSettings = {
       ...cached,
-      displayName: meta.display_name || cached.displayName || user.email?.split("@")[0] || "",
-      role: meta.role || cached.role || "Team Member",
+      displayName: finalDisplayName,
+      role: dbProfile?.role || meta.role || cached.role || "Team Member",
       isPublic: meta.is_public !== undefined ? meta.is_public : cached.isPublic,
-      avatarUrl: cached.avatarUrl || (meta.avatar_url && !meta.avatar_url.startsWith("data:") ? meta.avatar_url : null),
+      avatarUrl: safeAvatar,
       autoMuteOnJoin: meta.auto_mute_on_join !== undefined ? meta.auto_mute_on_join : cached.autoMuteOnJoin,
       autoCameraOffOnJoin:
         meta.auto_camera_off_on_join !== undefined ? meta.auto_camera_off_on_join : cached.autoCameraOffOnJoin,
@@ -100,7 +117,7 @@ export async function fetchUserSettings(): Promise<UserSettings> {
 
 /**
  * Save user settings immediately to localStorage cache,
- * and asynchronously sync to Supabase user metadata & profiles table.
+ * and asynchronously sync to Supabase profiles table & user metadata.
  */
 export async function saveUserSettings(settings: Partial<UserSettings>): Promise<UserSettings> {
   const current = getCachedUserSettings();
@@ -112,41 +129,51 @@ export async function saveUserSettings(settings: Partial<UserSettings>): Promise
 
   try {
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    let user = (await supabase.auth.getUser()).data.user;
+    if (!user) {
+      user = (await supabase.auth.getSession()).data.session?.user ?? null;
+    }
 
     if (user) {
       // NEVER put base64 data URLs into auth user_metadata cookies (exceeds Vercel 8KB header limit -> 494)
       const safeCloudAvatar = updated.avatarUrl && !updated.avatarUrl.startsWith("data:") ? updated.avatarUrl : null;
 
-      await supabase.auth.updateUser({
-        data: {
-          display_name: updated.displayName,
-          role: updated.role,
-          is_public: updated.isPublic,
-          avatar_url: safeCloudAvatar,
-          auto_mute_on_join: updated.autoMuteOnJoin,
-          auto_camera_off_on_join: updated.autoCameraOffOnJoin,
-          noise_cancellation: updated.noiseCancellation,
-          data_saver_mode: updated.dataSaverMode,
-          preferred_camera_id: updated.preferredCameraId,
-          preferred_mic_id: updated.preferredMicId,
-          preferred_speaker_id: updated.preferredSpeakerId,
-          background_blur: updated.backgroundBlur,
-          mirror_video: updated.mirrorVideo,
-        },
-      });
-
-      // Also sync to profiles table if it exists
+      // 1. Sync to public.profiles table (Primary source of truth for persistent user profile)
       try {
         await (supabase.from("profiles") as any).upsert({
           id: user.id,
           email: user.email || "",
           display_name: updated.displayName,
           avatar_url: safeCloudAvatar,
+          role: updated.role,
+          updated_at: new Date().toISOString(),
         });
-      } catch {}
+      } catch (e) {
+        console.warn("profiles table upsert error:", e);
+      }
+
+      // 2. Also update Supabase auth metadata
+      try {
+        await supabase.auth.updateUser({
+          data: {
+            display_name: updated.displayName,
+            role: updated.role,
+            is_public: updated.isPublic,
+            avatar_url: safeCloudAvatar,
+            auto_mute_on_join: updated.autoMuteOnJoin,
+            auto_camera_off_on_join: updated.autoCameraOffOnJoin,
+            noise_cancellation: updated.noiseCancellation,
+            data_saver_mode: updated.dataSaverMode,
+            preferred_camera_id: updated.preferredCameraId,
+            preferred_mic_id: updated.preferredMicId,
+            preferred_speaker_id: updated.preferredSpeakerId,
+            background_blur: updated.backgroundBlur,
+            mirror_video: updated.mirrorVideo,
+          },
+        });
+      } catch (e) {
+        console.warn("auth updateUser error:", e);
+      }
     }
   } catch (err) {
     console.warn("Failed to sync settings to Supabase:", err);

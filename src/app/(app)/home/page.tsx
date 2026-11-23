@@ -25,7 +25,7 @@ import { Card } from "@/components/ui/card";
 import { CopyCode } from "@/components/motion/copy-code";
 import { createClient } from "@/lib/supabase/client";
 import { generateMeetingCode, normalizeMeetingCode } from "@/lib/utils";
-import { getCachedUserSettings } from "@/lib/user-settings";
+import { getCachedUserSettings, fetchUserSettings } from "@/lib/user-settings";
 import { GreenRoomDrawer } from "@/components/meeting/green-room-drawer";
 import { type User as SupabaseUser } from "@supabase/supabase-js";
 import { toast } from "sonner";
@@ -42,18 +42,57 @@ export default function HomePage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(() => getCachedUserSettings());
 
-  const refreshProfile = () => {
+  const refreshProfile = async () => {
     setUserProfile(getCachedUserSettings());
+    try {
+      const fresh = await fetchUserSettings();
+      setUserProfile(fresh);
+    } catch {}
   };
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-      setLoadingUser(false);
-      refreshProfile();
+
+    // 1. Restore and auto-refresh session if access token expired
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+        setLoadingUser(false);
+        const fresh = await fetchUserSettings();
+        setUserProfile(fresh);
+      } else {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user) {
+          setUser(userData.user);
+          setLoadingUser(false);
+          const fresh = await fetchUserSettings();
+          setUserProfile(fresh);
+        } else {
+          setLoadingUser(false);
+          router.push("/login");
+        }
+      }
     });
-  }, []);
+
+    // 2. Listen to continuous auth state changes (token refresh, cross-tab updates)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        setLoadingUser(false);
+        const fresh = await fetchUserSettings();
+        setUserProfile(fresh);
+      } else if (event === "SIGNED_OUT") {
+        setUser(null);
+        router.push("/login");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [router]);
 
   const handleSignOut = async () => {
     const supabase = createClient();

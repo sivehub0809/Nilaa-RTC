@@ -9,6 +9,7 @@ import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, ArrowRight, Loader2 } from "l
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
+import { saveUserSettings } from "@/lib/user-settings";
 import { toast } from "sonner";
 
 export default function SignUpPage() {
@@ -49,6 +50,11 @@ export default function SignUpPage() {
         setLoading(false);
         return;
       }
+
+      // Pre-save display name to settings cache
+      try {
+        await saveUserSettings({ displayName: displayName.trim() });
+      } catch {}
 
       toast.success("Account created successfully!");
       router.push("/home");
