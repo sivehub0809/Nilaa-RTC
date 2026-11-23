@@ -15,6 +15,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  const isHttps =
+    process.env.NODE_ENV === "production" ||
+    request.headers.get("x-forwarded-proto") === "https" ||
+    request.nextUrl.protocol === "https:";
+
   const supabase = createServerClient<Database>(
     supabaseUrl,
     supabaseAnonKey,
@@ -40,6 +45,7 @@ export async function updateSession(request: NextRequest) {
               ...options,
               path: "/",
               sameSite: "lax",
+              secure: isHttps,
               maxAge: isDeleting ? 0 : 365 * 24 * 60 * 60,
               expires: expiryDate,
             });
@@ -73,11 +79,12 @@ export async function updateSession(request: NextRequest) {
     }
 
     const res = NextResponse.redirect(url, 307);
-    // Preserve refreshed auth cookies across redirects with explicit 1-year expiry
+    // Preserve refreshed auth cookies across redirects with explicit 1-year expiry and Secure flag
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       res.cookies.set(cookie.name, cookie.value, {
         path: "/",
         sameSite: "lax",
+        secure: isHttps,
         maxAge: 365 * 24 * 60 * 60,
         expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
       });
@@ -95,6 +102,12 @@ export async function updateSession(request: NextRequest) {
 
   // If logged in, redirect /login or /signup to /home
   if (user && (pathname === "/login" || pathname === "/signup")) {
+    return createRedirect("/home");
+  }
+
+  // If logged in and visiting the root landing page, auto-redirect to /home
+  // (unless explicit ?landing=1 query param is provided to view marketing pitch)
+  if (user && pathname === "/" && !request.nextUrl.searchParams.has("landing")) {
     return createRedirect("/home");
   }
 

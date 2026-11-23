@@ -53,6 +53,10 @@ export default function LandingPage() {
         setUser(user);
         const fresh = await fetchUserSettings();
         setProfile(fresh);
+        // If user is already authenticated and not explicitly viewing landing (?landing=1), send to /home
+        if (typeof window !== "undefined" && !window.location.search.includes("landing=1")) {
+          router.replace("/home");
+        }
       }
     });
 

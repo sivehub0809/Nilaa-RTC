@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { saveUserSettings } from "@/lib/user-settings";
-import { persistSessionBackup } from "@/lib/supabase/auth-helper";
+import { persistSessionBackup, getOrRestoreSession } from "@/lib/supabase/auth-helper";
 import { toast } from "sonner";
 
 export default function SignUpPage() {
@@ -20,6 +20,14 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    getOrRestoreSession().then(({ user }) => {
+      if (user) {
+        router.replace("/home");
+      }
+    });
+  }, [router]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();

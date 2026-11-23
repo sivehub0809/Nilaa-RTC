@@ -28,6 +28,7 @@ export function createClient() {
         // If the browser purged session cookies on close, restore from localStorage immediately
         if (typeof localStorage !== "undefined") {
           try {
+            const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
             for (let i = 0; i < localStorage.length; i++) {
               const key = localStorage.key(i);
               if (key && key.startsWith(AUTH_COOKIE_STORAGE_PREFIX)) {
@@ -39,6 +40,7 @@ export function createClient() {
                   document.cookie = serialize(cookieName, cookieValue, {
                     path: "/",
                     sameSite: "lax",
+                    secure: isHttps,
                     maxAge: 365 * 24 * 60 * 60,
                     expires: expiryDate,
                   });
@@ -54,17 +56,20 @@ export function createClient() {
       setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
         if (typeof document === "undefined") return;
 
+        const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
+
         cookiesToSet.forEach(({ name, value, options }) => {
           const isDeleting = options?.maxAge === 0 || value === "";
           const expiryDate = isDeleting
             ? new Date(0)
             : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
 
-          // 1. Write to document.cookie with BOTH maxAge and absolute expires date
+          // 1. Write to document.cookie with BOTH maxAge, absolute expires date, and secure on https
           document.cookie = serialize(name, value, {
             ...options,
             path: options?.path || "/",
             sameSite: (options?.sameSite as any) || "lax",
+            secure: isHttps,
             maxAge: isDeleting ? 0 : 365 * 24 * 60 * 60,
             expires: expiryDate,
           });
