@@ -39,8 +39,11 @@ export default function LandingPage() {
   const handleStartInstant = () => {
     setIsStarting(true);
     const code = generateMeetingCode();
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(`nilaa_host_${code}`, "1");
+    }
     toast.success(`Meeting room created: ${code}`);
-    router.push(`/${code}`);
+    router.push(`/${code}?host=1`);
   };
 
   const handleJoinWithCode = (e: React.FormEvent) => {
@@ -121,15 +124,15 @@ export default function LandingPage() {
             )}
           </nav>
 
-          {/* Mobile Hamburger Button */}
+          {/* Mobile Hamburger Button (Clean transparent without white background) */}
           <div className="flex md:hidden items-center">
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2.5 rounded-xl bg-white/80 hover:bg-white text-slate-800 border border-sky-200/70 shadow-xs backdrop-blur-sm transition-all cursor-pointer active:scale-95"
+              className="p-2 rounded-xl text-slate-800 hover:text-slate-950 transition-colors cursor-pointer active:scale-90"
               aria-label="Open mobile menu"
             >
-              <Menu className="h-5 w-5" />
+              <Menu className="h-6 w-6 stroke-[2]" />
             </button>
           </div>
         </div>
@@ -262,10 +265,19 @@ export default function LandingPage() {
             <button
               onClick={handleStartInstant}
               disabled={isStarting}
-              className="flex-1 flex items-center justify-center gap-2.5 text-sm sm:text-base font-medium px-5 py-3 rounded-[16px] bg-sky-500 hover:bg-sky-600 text-white disabled:opacity-60 transition-colors shadow-sm cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-2.5 text-sm sm:text-base font-medium px-5 py-3 rounded-[16px] bg-gradient-to-b from-sky-400 to-sky-600 hover:from-sky-500 hover:to-sky-700 active:scale-[0.98] text-white disabled:opacity-60 transition-all shadow-sm cursor-pointer"
             >
-              <Video className="h-4.5 w-4.5" />
-              {isStarting ? "Creating..." : "Start Instant Meeting"}
+              {isStarting ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  <span>Entering...</span>
+                </div>
+              ) : (
+                <>
+                  <Video className="h-4.5 w-4.5" />
+                  <span>Start Instant Meeting</span>
+                </>
+              )}
             </button>
 
             <div className="hidden sm:block h-8 w-[1px] bg-sky-200/80 my-auto" />

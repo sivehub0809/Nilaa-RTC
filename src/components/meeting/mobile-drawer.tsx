@@ -88,91 +88,101 @@ export function MobileDrawer({
                 </Button>
               </div>
 
-              {/* Quick Audio & Video Toggles */}
-              <div className="space-y-2 mb-4">
-                <Button
-                  variant={isAudioEnabled ? "secondary" : "destructive"}
-                  size="sm"
+              {/* Quick Audio & Video Toggles with Light Gradient */}
+              <div className="space-y-2.5 mb-4">
+                <button
+                  type="button"
                   onClick={onToggleAudio}
-                  className="w-full justify-start gap-2.5 text-xs h-10"
+                  className={`w-full flex items-center justify-start gap-3 text-xs h-11 px-3.5 rounded-xl font-medium transition-all duration-150 cursor-pointer active:scale-95 ${
+                    isAudioEnabled
+                      ? "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 border border-slate-200/90 shadow-xs"
+                      : "bg-gradient-to-b from-rose-500 to-red-600 text-white shadow-md shadow-red-500/20"
+                  }`}
                 >
-                  {isAudioEnabled ? <Mic className="h-4 w-4 text-accent" /> : <MicOff className="h-4 w-4" />}
-                  <span>{isAudioEnabled ? "Mute Mic" : "Unmute Mic"}</span>
-                </Button>
+                  {isAudioEnabled ? <Mic className="h-4 w-4 text-sky-600" /> : <MicOff className="h-4 w-4 text-white" />}
+                  <span>{isAudioEnabled ? "Mute Microphone" : "Unmute Microphone"}</span>
+                </button>
 
-                <Button
-                  variant={isVideoEnabled ? "secondary" : "destructive"}
-                  size="sm"
+                <button
+                  type="button"
                   onClick={onToggleVideo}
-                  className="w-full justify-start gap-2.5 text-xs h-10"
+                  className={`w-full flex items-center justify-start gap-3 text-xs h-11 px-3.5 rounded-xl font-medium transition-all duration-150 cursor-pointer active:scale-95 ${
+                    isVideoEnabled
+                      ? "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 border border-slate-200/90 shadow-xs"
+                      : "bg-gradient-to-b from-rose-500 to-red-600 text-white shadow-md shadow-red-500/20"
+                  }`}
                 >
-                  {isVideoEnabled ? <Video className="h-4 w-4 text-accent" /> : <VideoOff className="h-4 w-4" />}
+                  {isVideoEnabled ? <Video className="h-4 w-4 text-sky-600" /> : <VideoOff className="h-4 w-4 text-white" />}
                   <span>{isVideoEnabled ? "Stop Camera" : "Start Camera"}</span>
-                </Button>
+                </button>
 
-                <Button
-                  variant={isScreenSharing ? "accent" : "secondary"}
-                  size="sm"
+                <button
+                  type="button"
                   onClick={onToggleScreenShare}
-                  className="w-full justify-start gap-2.5 text-xs h-10"
+                  className={`w-full flex items-center justify-start gap-3 text-xs h-11 px-3.5 rounded-xl font-medium transition-all duration-150 cursor-pointer active:scale-95 ${
+                    isScreenSharing
+                      ? "bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/25"
+                      : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 border border-slate-200/90 shadow-xs"
+                  }`}
                 >
-                  <Share2 className="h-4 w-4" />
-                  <span>{isScreenSharing ? "Stop Share" : "Share Screen"}</span>
-                </Button>
+                  <Share2 className={`h-4 w-4 ${isScreenSharing ? "text-white" : "text-slate-600"}`} />
+                  <span>{isScreenSharing ? "Stop Sharing" : "Share Screen"}</span>
+                </button>
 
-                <Button
-                  variant={isHandRaised ? "accent" : "secondary"}
-                  size="sm"
+                <button
+                  type="button"
                   onClick={onToggleHand}
-                  className="w-full justify-start gap-2.5 text-xs h-10"
+                  className={`w-full flex items-center justify-start gap-3 text-xs h-11 px-3.5 rounded-xl font-medium transition-all duration-150 cursor-pointer active:scale-95 ${
+                    isHandRaised
+                      ? "bg-gradient-to-b from-amber-400 to-yellow-500 text-white shadow-md shadow-yellow-500/25"
+                      : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 border border-slate-200/90 shadow-xs"
+                  }`}
                 >
-                  <Hand className="h-4 w-4" />
+                  <Hand className={`h-4 w-4 ${isHandRaised ? "text-white fill-white" : "text-slate-600"}`} />
                   <span>{isHandRaised ? "Lower Hand" : "Raise Hand"}</span>
-                </Button>
+                </button>
               </div>
 
               {/* Panels Navigation */}
-              <div className="space-y-2 pt-3 border-t border-border/70 mb-4">
-                <Button
-                  variant="secondary"
-                  size="sm"
+              <div className="space-y-2.5 pt-3.5 border-t border-slate-200/80 mb-4">
+                <button
+                  type="button"
                   onClick={() => {
                     onOpenChat();
                     onClose();
                   }}
-                  className="w-full justify-start gap-2.5 text-xs h-10"
+                  className="w-full flex items-center justify-start gap-3 text-xs h-11 px-3.5 rounded-xl font-medium bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 border border-slate-200/90 shadow-xs transition-all duration-150 cursor-pointer active:scale-95"
                 >
-                  <MessageSquare className="h-4 w-4 text-accent" />
+                  <MessageSquare className="h-4 w-4 text-sky-600" />
                   <span>Open Chat</span>
-                </Button>
+                </button>
 
-                <Button
-                  variant="secondary"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => {
                     onOpenParticipants();
                     onClose();
                   }}
-                  className="w-full justify-start gap-2.5 text-xs h-10"
+                  className="w-full flex items-center justify-start gap-3 text-xs h-11 px-3.5 rounded-xl font-medium bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 border border-slate-200/90 shadow-xs transition-all duration-150 cursor-pointer active:scale-95"
                 >
-                  <Users className="h-4 w-4 text-accent" />
+                  <Users className="h-4 w-4 text-sky-600" />
                   <span>People List</span>
-                </Button>
+                </button>
               </div>
 
               {/* Quick Reactions Palette */}
-              <div className="pt-3 border-t border-border/70">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              <div className="pt-3.5 border-t border-slate-200/80">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
                   Reactions
                 </div>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-4 gap-2">
                   {REACTION_EMOJIS.map((emoji) => (
                     <button
                       key={emoji}
                       onClick={() => {
                         onSendReaction(emoji);
                       }}
-                      className="h-9 rounded-btn bg-surface hover:bg-surface-hover flex items-center justify-center text-lg active:scale-90 transition-transform"
+                      className="h-10 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 flex items-center justify-center text-lg active:scale-85 transition-all cursor-pointer"
                     >
                       {emoji}
                     </button>
@@ -182,16 +192,15 @@ export function MobileDrawer({
             </div>
 
             {/* Bottom Leave Meeting Action */}
-            <div className="pt-4 border-t border-border mt-4">
-              <Button
-                variant="destructive"
-                size="default"
+            <div className="pt-4 border-t border-slate-200/80 mt-4">
+              <button
+                type="button"
                 onClick={onLeave}
-                className="w-full gap-2 text-xs font-semibold h-11"
+                className="w-full flex items-center justify-center gap-2 text-xs font-medium h-11 rounded-xl bg-gradient-to-b from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white shadow-md shadow-red-500/25 transition-all duration-150 cursor-pointer active:scale-95"
               >
                 <PhoneOff className="h-4 w-4" />
                 <span>Leave Call</span>
-              </Button>
+              </button>
             </div>
           </motion.div>
         </>

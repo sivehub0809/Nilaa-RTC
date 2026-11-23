@@ -112,8 +112,8 @@ export function ParticipantsPanel({
                 )}
               </div>
 
-              {/* Host Control Actions */}
-              {isCurrentUserHost && !p.isSelf && (
+              {/* Host Control Actions (Only host can kick members; Host can never be kicked out) */}
+              {isCurrentUserHost && !p.isSelf && !p.isHost && (
                 <div className="flex items-center gap-1 ml-1 border-l border-slate-200 pl-1.5">
                   {!p.isMuted && onMuteParticipant && (
                     <button

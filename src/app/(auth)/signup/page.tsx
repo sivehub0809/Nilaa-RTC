@@ -98,7 +98,7 @@ export default function SignUpPage() {
               />
             </div>
           </div>
-          <h2 className="text-xl lg:text-2xl font-light text-white mt-6 text-center tracking-tight">
+          <h2 className="text-2xl lg:text-3xl font-medium font-sans text-white mt-6 text-center tracking-tight">
             Create your account.
           </h2>
           <p className="text-sky-100/90 text-xs sm:text-sm text-center mt-2 max-w-xs font-light leading-relaxed">
@@ -150,9 +150,9 @@ export default function SignUpPage() {
             </div>
           </div>
 
-          {/* Headings (Thinner font size and weight as requested) */}
+          {/* Headings (Medium Geist font with slightly larger title) */}
           <div className="space-y-1 text-center sm:text-left">
-            <h1 className="text-2xl sm:text-3xl font-light text-slate-900 tracking-tight">
+            <h1 className="text-3xl sm:text-4xl font-medium font-sans text-slate-900 tracking-tight">
               Sign up
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 font-light">

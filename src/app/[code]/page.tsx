@@ -27,6 +27,7 @@ import { CopyCode } from "@/components/motion/copy-code";
 import { createClient } from "@/lib/supabase/client";
 import { normalizeMeetingCode } from "@/lib/utils";
 import { getCachedUserSettings } from "@/lib/user-settings";
+import { CalmSpinner } from "@/components/ui/calm-spinner";
 import { toast } from "sonner";
 
 interface PreJoinPageProps {
@@ -333,11 +334,17 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
     sessionStorage.setItem("nilaa_audio_enabled", String(isAudioEnabled));
     sessionStorage.setItem("nilaa_mirror_enabled", String(isMirrored));
 
+    // Check if user is the meeting host
+    const isHost =
+      searchParams.get("host") === "1" ||
+      (typeof window !== "undefined" &&
+        sessionStorage.getItem(`nilaa_host_${code}`) === "1");
+
     // Route to meeting room with exact query params
     router.push(
       `/${code}/room?video=${isVideoEnabled}&audio=${isAudioEnabled}&name=${encodeURIComponent(
         displayName.trim()
-      )}`
+      )}${isHost ? "&host=1" : ""}`
     );
   };
 
@@ -574,16 +581,32 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
                 <button
                   onClick={handleJoinMeeting}
                   disabled={isJoining || !displayName.trim()}
-                  className="w-full h-13 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:opacity-60 text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all cursor-pointer"
+                  className="w-full h-13 rounded-2xl bg-gradient-to-b from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 active:scale-[0.98] disabled:opacity-60 text-white font-medium text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all cursor-pointer"
                 >
-                  <span>{isJoining ? "Entering Call..." : "Join Now"}</span>
-                  <ArrowRight className="h-5 w-5" />
+                  {isJoining ? (
+                    <CalmSpinner size="sm" text="Entering meeting..." />
+                  ) : (
+                    <>
+                      <span>Join Now</span>
+                      <ArrowRight className="h-5 w-5" />
+                    </>
+                  )}
                 </button>
               </div>
             </div>
           </Card>
         </div>
       </div>
+
+      {/* Calm processing / entering meeting overlay */}
+      {isJoining && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/70 backdrop-blur-md">
+          <div className="p-8 rounded-3xl bg-white/95 border border-sky-100 shadow-2xl flex flex-col items-center justify-center gap-3 max-w-xs w-full text-center">
+            <CalmSpinner size="lg" text="Entering meeting..." />
+            <p className="text-xs text-slate-500 font-light mt-1">Connecting to room {code}</p>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Footer Note */}
       <div className="text-center text-xs text-slate-400 py-4">

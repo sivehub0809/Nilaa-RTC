@@ -50,6 +50,7 @@ import { MobileDrawer } from "@/components/meeting/mobile-drawer";
 import { PresenceToast, PresenceNotification } from "@/components/meeting/presence-toast";
 import { REACTION_EMOJIS } from "@/lib/constants";
 import { normalizeMeetingCode } from "@/lib/utils";
+import { CalmSpinner } from "@/components/ui/calm-spinner";
 import { toast } from "sonner";
 
 interface RoomPageProps {
@@ -82,6 +83,11 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
 
   const userInitiatedLeave = useRef(false);
 
+  const isHostParam =
+    searchParams.get("host") === "1" ||
+    (typeof window !== "undefined" &&
+      sessionStorage.getItem(`nilaa_host_${code}`) === "1");
+
   // Fetch LiveKit room token from API
   useEffect(() => {
     let active = true;
@@ -95,7 +101,7 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
         const res = await fetch(
           `/api/livekit/token?room=${encodeURIComponent(code)}&username=${encodeURIComponent(
             userName
-          )}`
+          )}&isHost=${isHostParam ? "1" : "0"}`
         );
         const data = await res.json();
 
@@ -123,16 +129,21 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
     return () => {
       active = false;
     };
-  }, [code, userName]);
+  }, [code, userName, isHostParam]);
 
   if (loadingToken) {
     return (
-      <div className="h-screen w-screen bg-background flex flex-col items-center justify-center gap-4 text-foreground">
-        <Loader2 className="h-10 w-10 text-accent animate-spin" />
-        <h2 className="font-heading text-lg font-semibold tracking-tight">
-          Connecting to Nilaa RTC room {code}...
-        </h2>
-        <p className="text-xs text-muted-foreground">Securing real-time media connection</p>
+      <div
+        className="h-screen w-screen flex flex-col items-center justify-center p-6 text-slate-800 bg-cover bg-top bg-no-repeat"
+        style={{
+          backgroundImage: "url('/room-bg.jpg')",
+          backgroundColor: "#F8FAFC",
+        }}
+      >
+        <div className="p-8 rounded-3xl bg-white/75 backdrop-blur-xl border border-white/80 shadow-2xl shadow-sky-950/10 flex flex-col items-center justify-center gap-3.5 max-w-sm w-full text-center">
+          <CalmSpinner size="lg" text="Entering meeting..." />
+          <p className="text-xs text-slate-500 font-light mt-0.5">Connecting to room {code}</p>
+        </div>
       </div>
     );
   }
@@ -227,6 +238,7 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
       <ConferenceRoom
         code={code}
         userName={userName}
+        isHostProp={isHostParam}
         onLeave={() => {
           userInitiatedLeave.current = true;
         }}
@@ -239,10 +251,11 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
 interface ConferenceRoomProps {
   code: string;
   userName: string;
+  isHostProp?: boolean;
   onLeave: () => void;
 }
 
-function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
+function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: ConferenceRoomProps) {
   const router = useRouter();
   const room = useRoomContext();
   const connectionState = useConnectionState();
@@ -250,6 +263,18 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
     useLocalParticipant();
   const participants = useParticipants();
   const speakingParticipants = useSpeakingParticipants();
+
+  // Check if current participant is host (creator or granted host)
+  const isCurrentUserHost = useMemo(() => {
+    if (isHostProp) return true;
+    if (typeof window !== "undefined" && sessionStorage.getItem(`nilaa_host_${code}`) === "1") return true;
+    try {
+      const meta = localParticipant.metadata ? JSON.parse(localParticipant.metadata) : {};
+      return !!meta.isHost;
+    } catch {
+      return false;
+    }
+  }, [isHostProp, localParticipant.metadata, code]);
 
   // Media & UI States
   const [isHandRaised, setIsHandRaised] = useState(false);
@@ -420,6 +445,22 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
           toast("You were muted by the host");
         }
       } else if (data.type === "remove_request") {
+        // Host CANNOT be kicked out by anyone!
+        if (isCurrentUserHost) {
+          console.warn("Rejected kick attempt: Local participant is the host.");
+          return;
+        }
+        // Verify sender is host
+        const sender = participants.find((p) => p.identity === data.senderIdentity);
+        let isSenderHost = false;
+        try {
+          const meta = sender?.metadata ? JSON.parse(sender?.metadata || "{}") : {};
+          isSenderHost = !!meta.isHost;
+        } catch {}
+        if (!isSenderHost) {
+          console.warn("Rejected kick: Sender is not the meeting host.", data.senderIdentity);
+          return;
+        }
         if (data.targetIdentity === localParticipant.identity) {
           toast("You were removed from the call by the host");
           onLeave();
@@ -557,15 +598,35 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
 
   const handleRemoveParticipant = useCallback(
     (targetIdentity: string) => {
+      if (!isCurrentUserHost) {
+        toast.error("Only the host can remove participants");
+        return;
+      }
+      const targetP = participants.find((p) => p.identity === targetIdentity);
+      if (targetP) {
+        let isTargetHost = false;
+        try {
+          const meta = targetP.metadata ? JSON.parse(targetP.metadata) : {};
+          isTargetHost = !!meta.isHost;
+        } catch {}
+        if (isTargetHost) {
+          toast.error("The host cannot be kicked out of the meeting");
+          return;
+        }
+      }
       try {
-        const payload = JSON.stringify({ type: "remove_request", targetIdentity });
+        const payload = JSON.stringify({
+          type: "remove_request",
+          targetIdentity,
+          senderIdentity: localParticipant.identity,
+        });
         send(new TextEncoder().encode(payload), { reliable: true });
         toast("Participant removed");
       } catch (err) {
         console.warn("Failed to send remove command:", err);
       }
     },
-    [send]
+    [send, isCurrentUserHost, participants, localParticipant.identity]
   );
 
   // Leave room
@@ -576,18 +637,29 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
     router.push("/");
   };
 
-  // Convert LiveKit participants into list items
+  // Convert LiveKit participants into list items with accurate host assignment
   const participantListItems: ParticipantItem[] = useMemo(() => {
-    return participants.map((p, idx) => ({
-      id: p.identity,
-      name: p.name || p.identity,
-      isHost: idx === 0,
-      isSelf: p.isLocal,
-      isMuted: !p.isMicrophoneEnabled,
-      isVideoOff: !p.isCameraEnabled,
-      isHandRaised: !!raisedHandParticipants[p.identity],
-    }));
-  }, [participants, raisedHandParticipants]);
+    return participants.map((p) => {
+      let isHost = false;
+      try {
+        const meta = p.metadata ? JSON.parse(p.metadata) : {};
+        isHost = !!meta.isHost;
+      } catch {}
+      if (p.isLocal && isCurrentUserHost) {
+        isHost = true;
+      }
+      return {
+        id: p.identity,
+        name: p.name || p.identity,
+        isHost,
+        isGuest: !p.name,
+        isSelf: p.isLocal,
+        isMuted: !p.isMicrophoneEnabled,
+        isVideoOff: !p.isCameraEnabled,
+        isHandRaised: !!raisedHandParticipants[p.identity],
+      };
+    });
+  }, [participants, raisedHandParticipants, isCurrentUserHost]);
 
   // Speaking set for fast lookup
   const speakingIdentities = useMemo(() => {
@@ -648,30 +720,32 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
           <ConnectionChip />
 
           {/* Quick Mobile Chat Button */}
-          <Button
-            variant={activePanel === "chat" ? "accent" : "ghost"}
-            size="iconSm"
+          <button
+            type="button"
             onClick={() => setActivePanel(activePanel === "chat" ? null : "chat")}
-            className="lg:hidden h-9 w-9 relative text-foreground"
+            className={`lg:hidden h-9 w-9 rounded-xl flex items-center justify-center relative transition-all duration-150 cursor-pointer active:scale-90 ${
+              activePanel === "chat"
+                ? "bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-sm"
+                : "bg-gradient-to-b from-white/90 to-slate-100/90 text-slate-700 hover:text-slate-900 border border-slate-200/80 shadow-xs"
+            }`}
             title="Chat"
             aria-label="Open chat"
           >
             <MessageSquare className="h-4 w-4" />
             {messages.length > 1 && (
-              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-accent" />
+              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-blue-500" />
             )}
-          </Button>
+          </button>
 
           {/* Mobile Hamburger */}
-          <Button
-            variant="ghost"
-            size="iconSm"
+          <button
+            type="button"
             onClick={() => setIsMobileDrawerOpen(true)}
-            className="lg:hidden h-9 w-9 text-foreground"
+            className="lg:hidden h-9 w-9 rounded-xl flex items-center justify-center bg-gradient-to-b from-white/90 to-slate-100/90 text-slate-700 hover:text-slate-900 border border-slate-200/80 shadow-xs transition-all duration-150 cursor-pointer active:scale-90"
             aria-label="Open controls drawer"
           >
-            <Menu className="h-5 w-5" />
-          </Button>
+            <Menu className="h-4.5 w-4.5" />
+          </button>
         </div>
       </header>
 
@@ -685,9 +759,8 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
             )} gap-3 sm:gap-4 w-full h-full max-h-[85vh] items-center justify-center`}
           >
             {tracks.length === 0 ? (
-              <div className="relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-2xl overflow-hidden bg-white/60 border border-white/60 backdrop-blur-md shadow-2xl shadow-sky-950/10 flex flex-col items-center justify-center text-slate-700 gap-2">
-                <Loader2 className="h-8 w-8 text-sky-500 animate-spin" />
-                <span className="text-xs font-medium">Connecting audio & video...</span>
+              <div className="relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-2xl overflow-hidden bg-white/70 border border-white/80 backdrop-blur-xl shadow-2xl shadow-sky-950/10 flex flex-col items-center justify-center text-slate-700 p-6">
+                <CalmSpinner size="md" text="Connecting audio & video..." />
               </div>
             ) : (
               tracks.map((trackRef) => {
@@ -707,7 +780,7 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
                       isSpeaking ? "speaker-active-ring" : ""
                     }`}
                   >
-                    {/* Thin blue rounded corner stroke + Running stroke when speaking */}
+                    {/* Continuous connected line border around rounded corners (not dots) */}
                     <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-2xl z-20">
                       <rect
                         x="1.5"
@@ -716,10 +789,24 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
                         rx="15"
                         ry="15"
                         fill="none"
-                        stroke={isSpeaking ? "#38BDF8" : "rgba(56, 189, 248, 0.45)"}
-                        strokeWidth={isSpeaking ? "2.5" : "1.5"}
-                        className={isSpeaking ? "running-stroke" : ""}
+                        stroke={isSpeaking ? "#0284C7" : "rgba(56, 189, 248, 0.55)"}
+                        strokeWidth="1.5"
                       />
+                      {/* Flowing continuous light beam when speaking (continuous line, not dots) */}
+                      {isSpeaking && (
+                        <rect
+                          x="1.5"
+                          y="1.5"
+                          style={{ width: "calc(100% - 3px)", height: "calc(100% - 3px)" }}
+                          rx="15"
+                          ry="15"
+                          fill="none"
+                          stroke="#38BDF8"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          className="running-beam"
+                        />
+                      )}
                     </svg>
                     {/* Live Video Track */}
                     {hasVideo ? (
@@ -851,7 +938,7 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
             <aside className="fixed lg:relative right-0 top-0 bottom-0 z-40 w-full sm:w-96 lg:w-80 h-full bg-white/95 backdrop-blur-md border-l border-white/40 shadow-2xl lg:shadow-none flex flex-col">
               <ParticipantsPanel
                 participants={participantListItems}
-                isCurrentUserHost={participantListItems[0]?.isSelf}
+                isCurrentUserHost={isCurrentUserHost}
                 onMuteParticipant={handleMuteParticipant}
                 onRemoveParticipant={handleRemoveParticipant}
                 onClose={() => setActivePanel(null)}
@@ -861,79 +948,99 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
         )}
       </div>
 
-      {/* Desktop Bottom Controls Bar - Floating Frosted Glass */}
-      <footer className="h-20 border-t border-white/20 bg-white/45 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-20">
-        <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">{userName}</span>
-          <span>•</span>
-          <span>{participants.length} connected (Max 15)</span>
+      {/* Desktop Bottom Controls Bar - Floating Frosted Glass with Light Gradient Touchable Buttons */}
+      <footer className="h-20 border-t border-white/20 bg-white/55 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between shrink-0 z-20">
+        <div className="hidden md:flex items-center gap-2 text-xs text-slate-700">
+          <span className="font-medium text-slate-900">{userName}</span>
+          <span className="text-slate-400">•</span>
+          <span className="text-slate-600">{participants.length} connected (Max 15)</span>
         </div>
 
         {/* Primary Call Controls */}
-        <div className="flex items-center gap-2.5 sm:gap-3 mx-auto">
+        <div className="flex items-center gap-2.5 sm:gap-3.5 mx-auto">
           {/* Mic Button */}
-          <Button
-            variant={isMicrophoneEnabled ? "secondary" : "destructive"}
-            size="icon"
+          <button
+            type="button"
             onClick={() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)}
-            className="h-12 w-12 rounded-btn"
+            className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+              isMicrophoneEnabled
+                ? "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
+                : "bg-gradient-to-b from-rose-500 to-red-600 text-white shadow-md shadow-red-500/25 hover:brightness-105"
+            }`}
             title={isMicrophoneEnabled ? "Mute Mic" : "Unmute Mic"}
+            aria-label={isMicrophoneEnabled ? "Mute Microphone" : "Unmute Microphone"}
           >
             {isMicrophoneEnabled ? (
-              <Mic className="h-5 w-5 text-accent" />
+              <Mic className="h-5 w-5 text-sky-600" />
             ) : (
-              <MicOff className="h-5 w-5" />
+              <MicOff className="h-5 w-5 text-white" />
             )}
-          </Button>
+          </button>
 
           {/* Camera Button */}
-          <Button
-            variant={isCameraEnabled ? "secondary" : "destructive"}
-            size="icon"
+          <button
+            type="button"
             onClick={() => localParticipant.setCameraEnabled(!isCameraEnabled)}
-            className="h-12 w-12 rounded-btn"
+            className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+              isCameraEnabled
+                ? "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
+                : "bg-gradient-to-b from-rose-500 to-red-600 text-white shadow-md shadow-red-500/25 hover:brightness-105"
+            }`}
             title={isCameraEnabled ? "Turn Off Camera" : "Turn On Camera"}
+            aria-label={isCameraEnabled ? "Turn Off Camera" : "Turn On Camera"}
           >
             {isCameraEnabled ? (
-              <VideoIcon className="h-5 w-5 text-accent" />
+              <VideoIcon className="h-5 w-5 text-sky-600" />
             ) : (
-              <VideoOff className="h-5 w-5" />
+              <VideoOff className="h-5 w-5 text-white" />
             )}
-          </Button>
+          </button>
 
           {/* Screen Share Button */}
-          <Button
-            variant={isScreenShareEnabled ? "accent" : "secondary"}
-            size="icon"
+          <button
+            type="button"
             onClick={() => localParticipant.setScreenShareEnabled(!isScreenShareEnabled)}
-            className="h-12 w-12 rounded-btn hidden sm:flex"
+            className={`h-12 w-12 rounded-2xl hidden sm:flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+              isScreenShareEnabled
+                ? "bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/30"
+                : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
+            }`}
             title={isScreenShareEnabled ? "Stop Sharing Screen" : "Share Screen"}
+            aria-label="Toggle Screen Share"
           >
-            <Share2 className="h-5 w-5" />
-          </Button>
+            <Share2 className={`h-5 w-5 ${isScreenShareEnabled ? "text-white" : "text-slate-700"}`} />
+          </button>
 
           {/* Raise Hand Button */}
-          <Button
-            variant={isHandRaised ? "accent" : "secondary"}
-            size="icon"
+          <button
+            type="button"
             onClick={toggleHand}
-            className="h-12 w-12 rounded-btn"
+            className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+              isHandRaised
+                ? "bg-gradient-to-b from-amber-400 to-yellow-500 text-white shadow-md shadow-yellow-500/30"
+                : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
+            }`}
             title={isHandRaised ? "Lower Hand" : "Raise Hand"}
+            aria-label="Raise or Lower Hand"
           >
-            <Hand className="h-5 w-5" />
-          </Button>
+            <Hand className={`h-5 w-5 ${isHandRaised ? "text-white fill-white" : "text-slate-700"}`} />
+          </button>
 
           {/* Emoji Reactions Button */}
           <div className="relative">
-            <Button
-              variant={isReactionMenuOpen ? "accent" : "secondary"}
-              size="icon"
+            <button
+              type="button"
               onClick={() => setIsReactionMenuOpen(!isReactionMenuOpen)}
-              className="h-12 w-12 rounded-btn"
-              title="Reactions"
+              className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+                isReactionMenuOpen
+                  ? "bg-gradient-to-b from-sky-100 to-blue-100 text-blue-700 border border-sky-300/80 shadow-sm"
+                  : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
+              }`}
+              title="Send Reaction"
+              aria-label="Send Reaction"
             >
-              <Smile className="h-5 w-5" />
-            </Button>
+              <Smile className={`h-5 w-5 ${isReactionMenuOpen ? "text-blue-600" : "text-slate-700"}`} />
+            </button>
 
             <AnimatePresence>
               {isReactionMenuOpen && (
@@ -941,13 +1048,13 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-2 bg-card border border-border rounded-btn shadow-2xl z-30"
+                  className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-2 bg-white/95 backdrop-blur-xl border border-sky-100 rounded-2xl shadow-2xl z-30"
                 >
                   {REACTION_EMOJIS.map((emoji) => (
                     <button
                       key={emoji}
                       onClick={() => triggerReaction(emoji)}
-                      className="h-9 w-9 flex items-center justify-center text-xl hover:bg-surface-hover rounded-md active:scale-90 transition-transform"
+                      className="h-10 w-10 flex items-center justify-center text-xl hover:bg-sky-50 rounded-xl active:scale-85 transition-transform cursor-pointer"
                     >
                       {emoji}
                     </button>
@@ -958,43 +1065,52 @@ function ConferenceRoom({ code, userName, onLeave }: ConferenceRoomProps) {
           </div>
 
           {/* Leave Call Button */}
-          <Button
-            variant="destructive"
-            size="default"
+          <button
+            type="button"
             onClick={handleLeaveRoom}
-            className="h-12 px-6 rounded-btn font-semibold gap-2"
+            className="h-12 px-6 rounded-2xl font-medium text-sm flex items-center gap-2 bg-gradient-to-b from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white shadow-md shadow-red-500/25 transition-all duration-150 cursor-pointer active:scale-92 active:brightness-95"
+            title="Leave Meeting"
+            aria-label="Leave Meeting"
           >
-            <PhoneOff className="h-5 w-5" />
+            <PhoneOff className="h-4.5 w-4.5" />
             <span className="hidden sm:inline">Leave</span>
-          </Button>
+          </button>
         </div>
 
         {/* Right Panel Toggles */}
-        <div className="hidden md:flex items-center gap-2">
-          <Button
-            variant={activePanel === "chat" ? "accent" : "secondary"}
-            size="iconSm"
+        <div className="hidden md:flex items-center gap-2.5">
+          <button
+            type="button"
             onClick={() => setActivePanel(activePanel === "chat" ? null : "chat")}
             title="In-call chat"
-            className="h-10 w-10 relative"
+            aria-label="Toggle in-call chat"
+            className={`h-11 w-11 rounded-2xl flex items-center justify-center relative transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+              activePanel === "chat"
+                ? "bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/30"
+                : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
+            }`}
           >
-            <MessageSquare className="h-4 w-4" />
+            <MessageSquare className="h-4.5 w-4.5" />
             {messages.length > 1 && (
-              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-accent" />
+              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-blue-500 border-2 border-white" />
             )}
-          </Button>
+          </button>
 
-          <Button
-            variant={activePanel === "participants" ? "accent" : "secondary"}
-            size="iconSm"
+          <button
+            type="button"
             onClick={() =>
               setActivePanel(activePanel === "participants" ? null : "participants")
             }
-            title="People"
-            className="h-10 w-10"
+            title="People in room"
+            aria-label="Toggle people list"
+            className={`h-11 w-11 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+              activePanel === "participants"
+                ? "bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/30"
+                : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
+            }`}
           >
-            <Users className="h-4 w-4" />
-          </Button>
+            <Users className="h-4.5 w-4.5" />
+          </button>
         </div>
       </footer>
 

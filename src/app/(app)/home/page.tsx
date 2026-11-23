@@ -65,6 +65,9 @@ export default function HomePage() {
   const handleCreateInstantMeeting = () => {
     setIsCreating(true);
     const code = generateMeetingCode();
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(`nilaa_host_${code}`, "1");
+    }
     setCreatedRoomCode(code);
     setIsCreating(false);
     toast.success(`Generated room code: ${code}`);
@@ -179,7 +182,7 @@ export default function HomePage() {
                     <Button
                       variant="accent"
                       size="sm"
-                      onClick={() => router.push(`/${createdRoomCode}`)}
+                      onClick={() => router.push(`/${createdRoomCode}?host=1`)}
                       className="gap-1.5"
                     >
                       <span>Enter Room</span>

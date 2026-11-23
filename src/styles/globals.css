@@ -55,23 +55,23 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .speaker-active-ring {
-  box-shadow: 0 0 24px rgba(59, 130, 246, 0.45) !important;
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.4) !important;
 }
 
-/* Running stroke animation for speaking participants */
-@keyframes runningStroke {
+/* Continuous connected running beam (connected line, not dots) */
+@keyframes runningBeam {
   0% {
     stroke-dashoffset: 0;
   }
   100% {
-    stroke-dashoffset: -120;
+    stroke-dashoffset: -800;
   }
 }
 
-.running-stroke {
-  stroke-dasharray: 26 13;
-  animation: runningStroke 1.2s linear infinite;
-  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.85));
+.running-beam {
+  stroke-dasharray: 280 420;
+  animation: runningBeam 2.4s linear infinite;
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.9));
 }
 
 /* Respect reduce-motion preferences */

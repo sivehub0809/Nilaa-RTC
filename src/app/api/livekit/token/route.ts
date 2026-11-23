@@ -44,11 +44,13 @@ export async function GET(req: NextRequest) {
     const randomSuffix = Math.random().toString(36).substring(2, 8);
     const cleanPrefix = username.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12) || "user";
     const uniqueIdentity = `${cleanPrefix}_${randomSuffix}`;
+    const isHost = req.nextUrl.searchParams.get("isHost") === "1";
 
     const at = new AccessToken(apiKey, apiSecret, {
       identity: uniqueIdentity,
       name: username,
       ttl: "4h",
+      metadata: JSON.stringify({ isHost }),
     });
 
     at.addGrant({
