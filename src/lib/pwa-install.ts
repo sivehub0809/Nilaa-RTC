@@ -27,6 +27,9 @@ if (typeof window !== "undefined") {
   // 2. Track when app has been installed
   window.addEventListener("appinstalled", () => {
     globalDeferredPrompt = null;
+    try {
+      localStorage.setItem("nilaa_app_installed", "true");
+    } catch {}
     notifyListeners();
   });
 
@@ -55,17 +58,39 @@ export function detectPlatform(): PlatformType {
 
 export function isStandaloneApp(): boolean {
   if (typeof window === "undefined") return false;
+  try {
+    if (localStorage.getItem("nilaa_app_installed") === "true") {
+      return true;
+    }
+  } catch {}
+
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: window-controls-overlay)").matches ||
     (window.navigator as any).standalone === true ||
-    document.referrer.includes("android-app://")
+    document.referrer.includes("android-app://") ||
+    window.location.search.includes("source=pwa") ||
+    window.location.search.includes("mode=app")
   );
+}
+
+export function markAsInstalled() {
+  try {
+    localStorage.setItem("nilaa_app_installed", "true");
+    localStorage.setItem("nilaa_hide_install_banner", "true");
+    notifyListeners();
+  } catch {}
 }
 
 export function usePwaInstall() {
   const [canPrompt, setCanPrompt] = useState(Boolean(globalDeferredPrompt));
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [platform, setPlatform] = useState<PlatformType>("windows");
+  const [isInstalled, setIsInstalled] = useState(() => {
+    if (typeof window !== "undefined") {
+      return isStandaloneApp();
+    }
+    return false;
+  });
+  const [platform, setPlatform] = useState<PlatformType>(() => detectPlatform());
 
   useEffect(() => {
     setPlatform(detectPlatform());
@@ -90,6 +115,7 @@ export function usePwaInstall() {
         const choice = await globalDeferredPrompt.userChoice;
         if (choice.outcome === "accepted") {
           globalDeferredPrompt = null;
+          markAsInstalled();
           setCanPrompt(false);
           setIsInstalled(true);
           return "accepted";
@@ -107,5 +133,6 @@ export function usePwaInstall() {
     isInstalled,
     platform,
     promptInstall,
+    markAsInstalled,
   };
 }

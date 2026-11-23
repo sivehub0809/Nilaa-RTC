@@ -133,17 +133,17 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
 
   if (loadingToken) {
     return (
-      <div className="relative h-[100dvh] w-screen flex flex-col items-center justify-center p-6 text-slate-800 overflow-hidden">
+      <div className="relative h-[100dvh] w-screen flex flex-col items-center justify-center p-6 text-white overflow-hidden">
         <div
-          className="fixed inset-0 pointer-events-none z-0 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
+          className="fixed inset-0 pointer-events-none z-0 bg-cover bg-center bg-no-repeat transform-gpu will-change-transform"
           style={{
-            backgroundImage: "url('/room-bg.jpg')",
-            backgroundColor: "#F8FAFC",
+            backgroundImage: "url('/meeting-bg.png')",
+            backgroundColor: "#0B1528",
           }}
         />
-        <div className="relative z-10 p-8 rounded-3xl bg-white/75 backdrop-blur-xl border border-white/80 shadow-2xl shadow-sky-950/10 flex flex-col items-center justify-center gap-3.5 max-w-sm w-full text-center">
+        <div className="relative z-10 p-8 rounded-3xl bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-2xl shadow-sky-950/20 flex flex-col items-center justify-center gap-3.5 max-w-sm w-full text-center">
           <CalmSpinner size="lg" text="Entering meeting..." />
-          <p className="text-xs text-slate-500 font-light mt-0.5">Connecting to room {code}</p>
+          <p className="text-xs text-sky-200/70 font-light mt-0.5">Connecting to room {code}</p>
         </div>
       </div>
     );
@@ -680,12 +680,12 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
 
   return (
     <div className="relative h-[100dvh] w-screen overflow-hidden flex flex-col select-none touch-manipulation">
-      {/* GPU-composited fixed background (Smooth 60fps with zero mobile repaints) */}
+      {/* GPU-composited fixed background with user's atmospheric dark gradient asset */}
       <div
-        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
+        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-center bg-no-repeat transform-gpu will-change-transform"
         style={{
-          backgroundImage: "url('/room-bg.jpg')",
-          backgroundColor: "#F8FAFC",
+          backgroundImage: "url('/meeting-bg.png')",
+          backgroundColor: "#0B1528",
         }}
       />
       {/* Floating Reactions Overlay */}
@@ -694,11 +694,11 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
       {/* Join/Leave Presence Notifications */}
       <PresenceToast notifications={presenceNotifications} />
 
-      {/* Top Header Bar - Floating Frosted Glass */}
-      <header className="h-14 border-b border-white/20 bg-white/40 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-20">
+      {/* Top Header Bar - Sleek Dark Frosted Glass */}
+      <header className="h-14 border-b border-white/10 bg-slate-950/50 backdrop-blur-xl px-4 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full overflow-hidden">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full overflow-hidden border border-white/20">
               <Image
                 src="/nilaa-logo.jpg"
                 alt="Nilaa RTC"
@@ -707,8 +707,8 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                 className="object-cover w-full h-full"
               />
             </div>
-            <span className="font-heading text-sm font-bold tracking-tight text-foreground hidden sm:inline">
-              Nilaa <span className="text-accent">RTC</span>
+            <span className="font-heading text-sm font-bold tracking-tight text-white hidden sm:inline drop-shadow-xs">
+              Nilaa <span className="text-sky-400 font-extrabold">RTC</span>
             </span>
           </Link>
 
@@ -952,11 +952,11 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
       </div>
 
       {/* Bottom Controls Bar - Floating Frosted Glass with Light Gradient Touchable Buttons */}
-      <footer className="h-20 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-white/20 bg-white/55 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between shrink-0 z-20">
-        <div className="hidden md:flex items-center gap-2 text-xs text-slate-700">
-          <span className="font-medium text-slate-900">{userName}</span>
-          <span className="text-slate-400">•</span>
-          <span className="text-slate-600">{participants.length} connected (Max 15)</span>
+      <footer className="h-20 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-white/10 bg-slate-950/60 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between shrink-0 z-20">
+        <div className="hidden md:flex items-center gap-2 text-xs text-white/80">
+          <span className="font-medium text-white">{userName}</span>
+          <span className="text-white/40">•</span>
+          <span className="text-slate-300">{participants.length} connected (Max 15)</span>
         </div>
 
         {/* Primary Call Controls */}

@@ -117,9 +117,9 @@ export default function LandingPage() {
 
       {/* Transparent Navbar - Completely seamless with landing page background */}
       <header className="relative z-10 w-full bg-transparent">
-        <div className="w-full flex h-20 sm:h-22 items-center justify-between px-6 sm:px-10 lg:px-14">
+        <div className="max-w-6xl mx-auto w-full flex h-20 sm:h-22 items-center justify-between px-6 sm:px-8">
           <Link href="/" className="flex items-center gap-3 group">
-            {/* Logo 1.2x larger (44px) */}
+            {/* Logo 1.2x larger (44px) - aligned inward to max-w-6xl content grid */}
             <div className="flex h-11 w-11 items-center justify-center rounded-full overflow-hidden transition-transform duration-200 group-hover:scale-105 shadow-sm border border-white/60">
               <Image
                 src="/nilaa-logo.jpg"
@@ -138,48 +138,49 @@ export default function LandingPage() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-2.5">
+          <nav className="hidden md:flex items-center gap-5 sm:gap-6">
             {user ? (
-              <div className="flex items-center gap-2.5">
-                <Link href="/home">
-                  <button className="text-xs sm:text-sm px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm flex items-center gap-2 cursor-pointer">
-                    <Video className="h-4 w-4" />
-                    <span>Go to Meetings</span>
-                  </button>
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/home"
+                  className="font-sans text-[15px] sm:text-base font-medium text-white hover:text-white/85 transition-colors cursor-pointer drop-shadow-xs flex items-center gap-2"
+                >
+                  <Video className="h-4 w-4" />
+                  <span>Go to Meetings</span>
                 </Link>
-                <div className="flex flex-col justify-center px-3 py-1.5 rounded-xl bg-white/80 border border-sky-200/60 text-xs">
-                  <div className="flex items-center gap-2 font-medium text-slate-800">
-                    <div className="h-5 w-5 rounded-full overflow-hidden bg-sky-100 flex items-center justify-center text-[10px] text-blue-600 font-bold shrink-0 border border-white">
-                      {profile?.avatarUrl ? (
-                        <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                      ) : (
-                        <User className="h-3 w-3 text-blue-600 shrink-0" />
-                      )}
-                    </div>
-                    <span className="truncate max-w-[130px]">
-                      {profile?.displayName || user.user_metadata?.display_name || user.email?.split("@")[0]}
-                    </span>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/40 text-xs text-white">
+                  <div className="h-5 w-5 rounded-full overflow-hidden bg-white/30 flex items-center justify-center text-[10px] text-white font-bold shrink-0 border border-white/60">
+                    {profile?.avatarUrl ? (
+                      <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="h-3 w-3 text-white shrink-0" />
+                    )}
                   </div>
-                  {user.email && (
-                    <span className="text-[10px] text-slate-500 font-normal truncate max-w-[130px] pl-7">
-                      {user.email}
-                    </span>
-                  )}
+                  <span className="truncate max-w-[130px] font-medium">
+                    {profile?.displayName || user.user_metadata?.display_name || user.email?.split("@")[0]}
+                  </span>
                 </div>
                 <InstallPwaButton variant="nav" />
               </div>
             ) : (
               <>
-                <Link href="/login">
-                  <button className="text-xs sm:text-sm px-3.5 py-2 rounded-xl border border-sky-300/70 text-sky-900 bg-white/60 hover:bg-white/90 transition-colors font-medium shadow-xs cursor-pointer">
-                    Log In
-                  </button>
+                {/* 1. Log In (Left) - Geist Vercel font, Pure White, Increased Size, No Container */}
+                <Link
+                  href="/login"
+                  className="font-sans text-[15px] sm:text-base font-medium text-white hover:text-white/80 active:text-white/60 transition-colors drop-shadow-xs cursor-pointer select-none"
+                >
+                  Log In
                 </Link>
-                <Link href="/signup">
-                  <button className="text-xs sm:text-sm px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm cursor-pointer">
-                    Sign Up
-                  </button>
+
+                {/* 2. Sign Up (Middle) - Geist Vercel font, Pure White, Increased Size, No Container */}
+                <Link
+                  href="/signup"
+                  className="font-sans text-[15px] sm:text-base font-medium text-white hover:text-white/80 active:text-white/60 transition-colors drop-shadow-xs cursor-pointer select-none"
+                >
+                  Sign Up
                 </Link>
+
+                {/* 3. Get for Windows (Right) - Liquid Glass Pill Button */}
                 <InstallPwaButton variant="nav" />
               </>
             )}

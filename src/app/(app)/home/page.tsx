@@ -18,6 +18,7 @@ import {
   Check,
   Copy,
   Mail,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,11 +30,19 @@ import { getCachedUserSettings, fetchUserSettings } from "@/lib/user-settings";
 import { getOrRestoreSession, persistSessionBackup, clearSessionBackup } from "@/lib/supabase/auth-helper";
 import { GreenRoomDrawer } from "@/components/meeting/green-room-drawer";
 import { InstallPwaButton } from "@/components/ui/install-pwa-button";
+import { usePwaInstall } from "@/lib/pwa-install";
 import { type User as SupabaseUser } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
 export default function HomePage() {
   const router = useRouter();
+  const { isInstalled } = usePwaInstall();
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("nilaa_hide_install_banner") === "true";
+    }
+    return false;
+  });
   const [user, setUser] = useState<SupabaseUser | null>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -213,25 +222,43 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Install Nilaa RTC Quick App Banner */}
-        <div className="mb-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-500/10 via-sky-500/10 to-indigo-500/10 border border-blue-200/60 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm shrink-0">
-              <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 fill-white" aria-hidden="true">
-                <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
-              </svg>
+        {/* Install Nilaa RTC Quick App Banner - Hidden completely when installed or dismissed */}
+        {!isInstalled && !bannerDismissed && (
+          <div className="relative mb-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-500/10 via-sky-500/10 to-indigo-500/10 border border-blue-200/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm shrink-0">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 fill-white" aria-hidden="true">
+                  <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
+                </svg>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900">
+                  Install Nilaa RTC on Desktop & Mobile
+                </h4>
+                <p className="text-xs text-slate-500 font-normal">
+                  Instant one-click access right from your Windows Taskbar or phone home screen with your saved account.
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-sm font-semibold text-slate-900">
-                Install Nilaa RTC on Desktop & Mobile
-              </h4>
-              <p className="text-xs text-slate-500 font-normal">
-                Instant one-click access right from your Windows Taskbar or phone home screen with your saved account.
-              </p>
+            <div className="flex items-center gap-2">
+              <InstallPwaButton />
+              <button
+                type="button"
+                onClick={() => {
+                  setBannerDismissed(true);
+                  try {
+                    localStorage.setItem("nilaa_hide_install_banner", "true");
+                  } catch {}
+                }}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition-colors cursor-pointer"
+                title="Dismiss"
+                aria-label="Dismiss banner"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           </div>
-          <InstallPwaButton />
-        </div>
+        )}
 
         {/* 2 Clear, Spacious Primary Action Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-10">

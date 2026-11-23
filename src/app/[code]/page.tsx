@@ -353,31 +353,31 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
 
   return (
     <div className="relative min-h-[100dvh] text-slate-900 flex flex-col justify-between p-4 sm:p-8 overflow-x-hidden">
-      {/* GPU-composited fixed background (Smooth 60fps scrolling with zero mobile repaints) */}
+      {/* GPU-composited fixed background with user's atmospheric dark gradient asset */}
       <div
-        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
+        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-center bg-no-repeat transform-gpu will-change-transform"
         style={{
-          backgroundImage: "url('/room-bg.jpg')",
-          backgroundColor: "#F8FAFC",
+          backgroundImage: "url('/meeting-bg.png')",
+          backgroundColor: "#0B1528",
         }}
       />
       {/* Top Header */}
       <div className="relative z-10 flex items-center justify-between max-w-5xl mx-auto w-full mb-6">
         <Link
           href="/home"
-          className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors group"
+          className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-white/85 hover:text-white transition-colors group"
         >
           <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-full overflow-hidden flex items-center justify-center">
+            <div className="h-6 w-6 rounded-full overflow-hidden flex items-center justify-center border border-white/20">
               <Image src="/nilaa-logo.jpg" alt="Nilaa" width={24} height={24} className="object-cover" />
             </div>
-            <span>Home</span>
+            <span className="drop-shadow-xs">Home</span>
           </div>
         </Link>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500 hidden sm:inline">Room Code:</span>
+          <span className="text-xs text-white/70 hidden sm:inline drop-shadow-xs">Room Code:</span>
           <CopyCode code={code} />
         </div>
       </div>

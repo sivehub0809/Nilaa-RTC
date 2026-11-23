@@ -2,7 +2,7 @@
   "name": "Nilaa RTC - Video Meetings",
   "short_name": "Nilaa RTC",
   "description": "Instant, clear, zero-friction video meetings right on your desktop and phone.",
-  "start_url": "/home",
+  "start_url": "/home?source=pwa",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
