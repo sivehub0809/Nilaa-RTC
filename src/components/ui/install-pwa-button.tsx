@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Download, Smartphone, Apple } from "lucide-react";
 import { usePwaInstall } from "@/lib/pwa-install";
-import { InstallGuideModal } from "@/components/ui/install-guide-modal";
 import { toast } from "sonner";
 
 interface InstallPwaButtonProps {
@@ -27,9 +25,27 @@ function WindowsIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
   );
 }
 
+/**
+ * Direct download for Windows / Desktop app launcher (.url Internet Shortcut)
+ * Downloads instantly to the user's computer with zero instructions/modals
+ */
+function triggerWindowsDownload() {
+  if (typeof window === "undefined") return;
+  const origin = window.location.origin;
+  const shortcut = `[InternetShortcut]\r\nURL=${origin}/home?source=pwa\r\nIconIndex=0\r\nIconFile=${origin}/favicon.ico\r\n`;
+  const blob = new Blob([shortcut], { type: "application/x-mswinurl;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "Nilaa RTC.url";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export function InstallPwaButton({ className = "", variant = "primary" }: InstallPwaButtonProps) {
   const { isInstalled, platform, promptInstall, markAsInstalled } = usePwaInstall();
-  const [guideOpen, setGuideOpen] = useState(false);
 
   // If already running inside installed standalone PWA, completely hide install UI
   if (isInstalled) {
@@ -40,12 +56,27 @@ export function InstallPwaButton({ className = "", variant = "primary" }: Instal
     e.preventDefault();
     e.stopPropagation();
 
+    // 1. Try native browser installation prompt if supported
     const result = await promptInstall();
     if (result === "accepted") {
       markAsInstalled();
-      toast.success("Nilaa RTC installed! Launch it anytime from your desktop or home screen.");
-    } else if (result === "manual") {
-      setGuideOpen(true);
+      toast.success("Nilaa RTC installed! Launch it anytime from your Windows Taskbar.");
+      return;
+    }
+
+    // 2. Direct download without any instruction modal
+    if (platform === "windows" || platform === "mac" || platform === "other") {
+      triggerWindowsDownload();
+      markAsInstalled();
+      toast.success("Downloading Nilaa RTC desktop app...");
+      return;
+    }
+
+    // 3. Mobile quick toast notification
+    if (platform === "ios") {
+      toast.info("In Safari, tap Share and select 'Add to Home Screen'.");
+    } else if (platform === "android") {
+      toast.info("In Chrome, tap menu (⋮) and select 'Install app'.");
     }
   };
 
@@ -84,78 +115,54 @@ export function InstallPwaButton({ className = "", variant = "primary" }: Instal
 
   if (variant === "nav") {
     return (
-      <>
-        {/* Liquid Glass Navbar Pill Button (Matches User Sketch & Image 2 / Image 3) */}
-        <button
-          type="button"
-          onClick={handleInstallClick}
-          className={`relative h-9 px-4 rounded-full backdrop-blur-xl bg-white/20 hover:bg-white/35 text-blue-600 hover:text-blue-700 font-sans font-medium text-xs sm:text-[13px] tracking-tight shadow-sm shadow-sky-950/5 border border-white/60 hover:border-white/90 flex items-center gap-2 active:scale-95 transition-all duration-200 cursor-pointer overflow-hidden ${className}`}
-          title="Install Nilaa RTC as Desktop App"
-        >
-          {/* Liquid Glass Specular Top Highlight */}
-          <span className="pointer-events-none absolute inset-x-2 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent" />
-          
-          <span className="flex items-center justify-center p-0.5 rounded-xs bg-white/40 backdrop-blur-xs">
-            {icon}
-          </span>
-          <span>{label}</span>
-        </button>
-
-        <InstallGuideModal
-          isOpen={guideOpen}
-          onClose={() => setGuideOpen(false)}
-          platform={platform}
-        />
-      </>
+      <button
+        type="button"
+        onClick={handleInstallClick}
+        className={`relative h-9 px-4 rounded-full backdrop-blur-xl bg-white/20 hover:bg-white/35 text-blue-600 hover:text-blue-700 font-sans font-medium text-xs sm:text-[13px] tracking-tight shadow-sm shadow-sky-950/5 border border-white/60 hover:border-white/90 flex items-center gap-2 active:scale-95 transition-all duration-200 cursor-pointer overflow-hidden ${className}`}
+        title="Download Nilaa RTC Desktop App"
+      >
+        {/* Liquid Glass Specular Top Highlight */}
+        <span className="pointer-events-none absolute inset-x-2 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+        
+        <span className="flex items-center justify-center p-0.5 rounded-xs bg-white/40 backdrop-blur-xs">
+          {icon}
+        </span>
+        <span>{label}</span>
+      </button>
     );
   }
 
   if (variant === "compact") {
     return (
-      <>
-        <button
-          type="button"
-          onClick={handleInstallClick}
-          className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full backdrop-blur-xl bg-white/30 hover:bg-white/50 text-blue-600 border border-white/60 hover:border-white/90 font-sans text-xs font-medium shadow-xs transition-all cursor-pointer ${className}`}
-        >
-          <span className="flex items-center justify-center p-0.5 rounded-xs bg-white/40">
-            {icon}
-          </span>
-          <span>{label}</span>
-        </button>
-
-        <InstallGuideModal
-          isOpen={guideOpen}
-          onClose={() => setGuideOpen(false)}
-          platform={platform}
-        />
-      </>
+      <button
+        type="button"
+        onClick={handleInstallClick}
+        className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full backdrop-blur-xl bg-white/30 hover:bg-white/50 text-blue-600 border border-white/60 hover:border-white/90 font-sans text-xs font-medium shadow-xs transition-all cursor-pointer ${className}`}
+        title="Download Nilaa RTC Desktop App"
+      >
+        <span className="flex items-center justify-center p-0.5 rounded-xs bg-white/40">
+          {icon}
+        </span>
+        <span>{label}</span>
+      </button>
     );
   }
 
   // Primary Button: Liquid Glass Pill Design matching user's Image 3
   return (
-    <>
-      <button
-        type="button"
-        onClick={handleInstallClick}
-        className={`group relative inline-flex items-center justify-center gap-2.5 px-5 py-2.5 rounded-full backdrop-blur-2xl bg-white/25 hover:bg-white/40 text-blue-600 hover:text-blue-700 font-sans font-medium text-xs sm:text-sm tracking-tight shadow-md shadow-sky-950/5 border border-white/60 hover:border-white/90 active:scale-[0.98] transition-all duration-200 cursor-pointer select-none overflow-hidden ${className}`}
-        aria-label={label}
-      >
-        {/* Liquid Glass Top Edge Specular Highlight */}
-        <span className="pointer-events-none absolute inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+    <button
+      type="button"
+      onClick={handleInstallClick}
+      className={`group relative inline-flex items-center justify-center gap-2.5 px-5 py-2.5 rounded-full backdrop-blur-2xl bg-white/25 hover:bg-white/40 text-blue-600 hover:text-blue-700 font-sans font-medium text-xs sm:text-sm tracking-tight shadow-md shadow-sky-950/5 border border-white/60 hover:border-white/90 active:scale-[0.98] transition-all duration-200 cursor-pointer select-none overflow-hidden ${className}`}
+      aria-label={label}
+    >
+      {/* Liquid Glass Top Edge Specular Highlight */}
+      <span className="pointer-events-none absolute inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/80 to-transparent" />
 
-        <span className="flex items-center justify-center p-1 rounded-sm bg-blue-500/20 backdrop-blur-xs transition-transform group-hover:scale-105">
-          {icon}
-        </span>
-        <span>{label}</span>
-      </button>
-
-      <InstallGuideModal
-        isOpen={guideOpen}
-        onClose={() => setGuideOpen(false)}
-        platform={platform}
-      />
-    </>
+      <span className="flex items-center justify-center p-1 rounded-sm bg-blue-500/20 backdrop-blur-xs transition-transform group-hover:scale-105">
+        {icon}
+      </span>
+      <span>{label}</span>
+    </button>
   );
 }
