@@ -1,0 +1,40 @@
+{
+  "name": "Nilaa RTC - Video Meetings",
+  "short_name": "Nilaa RTC",
+  "description": "Instant, clear, zero-friction video meetings right on your desktop and phone.",
+  "start_url": "/home",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "any",
+  "categories": ["utilities", "productivity", "social"],
+  "icons": [
+    {
+      "src": "/dashboard-icon.png",
+      "sizes": "360x360",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/nilaa-logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/nilaa-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Start Instant Meeting",
+      "short_name": "Instant Call",
+      "description": "Create and enter a new meeting room instantly",
+      "url": "/home?action=instant"
+    }
+  ]
+}

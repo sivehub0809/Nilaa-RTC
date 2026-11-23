@@ -23,6 +23,7 @@ import { generateMeetingCode, normalizeMeetingCode } from "@/lib/utils";
 import { fetchUserSettings, getCachedUserSettings, type UserSettings } from "@/lib/user-settings";
 import { getOrRestoreSession, persistSessionBackup, clearSessionBackup } from "@/lib/supabase/auth-helper";
 import { type User as SupabaseUser } from "@supabase/supabase-js";
+import { InstallPwaButton } from "@/components/ui/install-pwa-button";
 import { toast } from "sonner";
 
 export default function LandingPage() {
@@ -138,6 +139,7 @@ export default function LandingPage() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-2.5">
+            <InstallPwaButton variant="nav" />
             {user ? (
               <div className="flex items-center gap-2.5">
                 <Link href="/home">
@@ -282,9 +284,17 @@ export default function LandingPage() {
                           <span>Go to Meetings</span>
                         </button>
                       </Link>
+
+                      <div className="pt-2">
+                        <InstallPwaButton className="w-full justify-center" />
+                      </div>
                     </>
                   ) : (
                     <>
+                      <div className="pb-1">
+                        <InstallPwaButton className="w-full justify-center" />
+                      </div>
+
                       <Link
                         href="/guest"
                         onClick={() => setIsMobileMenuOpen(false)}
@@ -423,6 +433,16 @@ export default function LandingPage() {
             Connect instantly with up to 15 people. Crisp audio, sharp video,
             real-time emoji reactions, and seamless screen sharing right from your browser.
           </motion.p>
+
+          {/* Dedicated Get for Windows / Install App Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5"
+          >
+            <InstallPwaButton />
+          </motion.div>
         </section>
 
         {/* Feature Highlights Grid */}

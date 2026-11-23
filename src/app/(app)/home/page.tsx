@@ -28,6 +28,7 @@ import { generateMeetingCode, normalizeMeetingCode } from "@/lib/utils";
 import { getCachedUserSettings, fetchUserSettings } from "@/lib/user-settings";
 import { getOrRestoreSession, persistSessionBackup, clearSessionBackup } from "@/lib/supabase/auth-helper";
 import { GreenRoomDrawer } from "@/components/meeting/green-room-drawer";
+import { InstallPwaButton } from "@/components/ui/install-pwa-button";
 import { type User as SupabaseUser } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
@@ -157,6 +158,9 @@ export default function HomePage() {
           </Link>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Install App Quick Button */}
+            <InstallPwaButton variant="compact" />
+
             {/* Green Room & Settings Button */}
             <button
               onClick={() => setDrawerOpen(true)}
@@ -207,6 +211,26 @@ export default function HomePage() {
           <p className="mt-2 text-slate-500 text-sm sm:text-base max-w-xl">
             Start an instant high-definition video meeting or enter an ongoing room with a code.
           </p>
+        </div>
+
+        {/* Install Nilaa RTC Quick App Banner */}
+        <div className="mb-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-500/10 via-sky-500/10 to-indigo-500/10 border border-blue-200/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm shrink-0">
+              <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 fill-white" aria-hidden="true">
+                <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
+              </svg>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-slate-900">
+                Install Nilaa RTC on Desktop & Mobile
+              </h4>
+              <p className="text-xs text-slate-500 font-normal">
+                Instant one-click access right from your Windows Taskbar or phone home screen with your saved account.
+              </p>
+            </div>
+          </div>
+          <InstallPwaButton />
         </div>
 
         {/* 2 Clear, Spacious Primary Action Cards */}
