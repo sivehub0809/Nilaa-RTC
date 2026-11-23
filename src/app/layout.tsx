@@ -32,7 +32,8 @@ export default function RootLayout({
                   var cookies = document.cookie.split(';');
                   for (var i = 0; i < cookies.length; i++) {
                     var c = cookies[i].trim();
-                    if (c.length > 2500) {
+                    // Only clean up legacy bloated base64 data URLs, never valid Supabase auth session cookies
+                    if (c.indexOf('data%3Aimage') !== -1 || c.indexOf('data:image') !== -1) {
                       var name = c.split('=')[0];
                       document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0;';
                     }

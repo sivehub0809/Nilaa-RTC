@@ -17,9 +17,11 @@ import {
   ZoomIn,
   Sliders,
   Check,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { createClient } from "@/lib/supabase/client";
 import {
   UserSettings,
   DEFAULT_USER_SETTINGS,
@@ -37,6 +39,7 @@ interface GreenRoomDrawerProps {
 export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoomDrawerProps) {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
   const [saving, setSaving] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
 
   // Video / Audio Hardware State
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
@@ -70,6 +73,13 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
       setSettings(cached);
       setIsMirrored(cached.mirrorVideo);
       startPreview();
+
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user?.email) {
+          setUserEmail(data.user.email);
+        }
+      });
     } else {
       // Stop preview when drawer closes
       if (previewStream) {
@@ -433,6 +443,12 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
                         onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
                         className="h-9 text-xs bg-white border-slate-200"
                       />
+                      {userEmail && (
+                        <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500 font-normal">
+                          <Mail className="h-3 w-3 text-slate-400 shrink-0" />
+                          <span className="truncate">{userEmail}</span>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="text-[11px] font-semibold text-slate-700">Role Label</label>

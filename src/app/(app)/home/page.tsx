@@ -17,6 +17,7 @@ import {
   Sliders,
   Check,
   Copy,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,6 +147,12 @@ export default function HomePage() {
               {userProfile.displayName || user?.email?.split("@")[0] || "Friend"}
             </span>
           </h1>
+          {user?.email && (
+            <div className="mt-1 flex items-center justify-center sm:justify-start gap-1.5 text-xs sm:text-sm text-slate-500 font-normal">
+              <Mail className="h-3.5 w-3.5 text-slate-400" />
+              <span>{user.email}</span>
+            </div>
+          )}
           <p className="mt-2 text-slate-500 text-sm sm:text-base max-w-xl">
             Start an instant high-definition video meeting or enter an ongoing room with a code.
           </p>

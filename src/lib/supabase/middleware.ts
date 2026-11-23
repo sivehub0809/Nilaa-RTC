@@ -62,6 +62,10 @@ export async function updateSession(request: NextRequest) {
     }
 
     const res = NextResponse.redirect(url, 307);
+    // Preserve refreshed auth cookies across redirects
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      res.cookies.set(cookie.name, cookie.value, cookie);
+    });
     // Prevent iOS WebKit/Safari from aggressively caching redirects or downgrading protocols
     res.headers.set("x-middleware-cache", "no-cache");
     res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");

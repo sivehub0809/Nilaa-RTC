@@ -16,6 +16,7 @@ import {
   User,
   Menu,
   X,
+  Mail,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { generateMeetingCode, normalizeMeetingCode } from "@/lib/utils";
@@ -96,11 +97,18 @@ export default function LandingPage() {
                     <span>Go to Meetings</span>
                   </button>
                 </Link>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 border border-sky-200/60 text-xs font-normal text-slate-700">
-                  <User className="h-3.5 w-3.5 text-blue-600" />
-                  <span className="truncate max-w-[140px]">
-                    {user.user_metadata?.display_name || user.email?.split("@")[0]}
-                  </span>
+                <div className="flex flex-col justify-center px-3 py-1 rounded-xl bg-white/80 border border-sky-200/60 text-xs">
+                  <div className="flex items-center gap-1.5 font-medium text-slate-800">
+                    <User className="h-3 w-3 text-blue-600 shrink-0" />
+                    <span className="truncate max-w-[130px]">
+                      {user.user_metadata?.display_name || user.email?.split("@")[0]}
+                    </span>
+                  </div>
+                  {user.email && (
+                    <span className="text-[10px] text-slate-500 font-normal truncate max-w-[130px] pl-4">
+                      {user.email}
+                    </span>
+                  )}
                 </div>
               </div>
             ) : (
@@ -189,9 +197,15 @@ export default function LandingPage() {
                         <div className="text-[11px] font-medium uppercase tracking-wider text-sky-600">
                           Signed in as
                         </div>
-                        <div className="font-medium text-sm text-slate-900 truncate mt-0.5">
-                          {user.user_metadata?.display_name || user.email}
+                        <div className="font-semibold text-sm text-slate-900 truncate mt-0.5">
+                          {user.user_metadata?.display_name || user.email?.split("@")[0]}
                         </div>
+                        {user.email && (
+                          <div className="text-xs text-slate-500 font-normal truncate mt-0.5 flex items-center gap-1.5">
+                            <Mail className="h-3 w-3 text-slate-400 shrink-0" />
+                            <span className="truncate">{user.email}</span>
+                          </div>
+                        )}
                       </div>
 
                       <Link
