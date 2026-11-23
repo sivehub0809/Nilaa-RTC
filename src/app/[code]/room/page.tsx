@@ -133,13 +133,14 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
 
   if (loadingToken) {
     return (
-      <div
-        className="h-screen w-screen flex flex-col items-center justify-center p-6 text-slate-800 bg-cover bg-top bg-no-repeat"
-        style={{
-          backgroundImage: "url('/room-bg.jpg')",
-          backgroundColor: "#F8FAFC",
-        }}
-      >
+      <div className="relative h-[100dvh] w-screen flex flex-col items-center justify-center p-6 text-slate-800 overflow-hidden">
+        <div
+          className="fixed inset-0 pointer-events-none -z-10 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
+          style={{
+            backgroundImage: "url('/room-bg.jpg')",
+            backgroundColor: "#F8FAFC",
+          }}
+        />
         <div className="p-8 rounded-3xl bg-white/75 backdrop-blur-xl border border-white/80 shadow-2xl shadow-sky-950/10 flex flex-col items-center justify-center gap-3.5 max-w-sm w-full text-center">
           <CalmSpinner size="lg" text="Entering meeting..." />
           <p className="text-xs text-slate-500 font-light mt-0.5">Connecting to room {code}</p>
@@ -151,7 +152,7 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
   // If user disconnected or connection dropped
   if (isDisconnected && !userInitiatedLeave.current) {
     return (
-      <div className="h-screen w-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+      <div className="h-[100dvh] w-screen bg-background flex flex-col items-center justify-center p-6 text-center">
         <div className="max-w-md w-full bg-card border border-border rounded-card p-8 space-y-4 shadow-2xl">
           <div className="h-12 w-12 rounded-full bg-surface border border-border text-foreground flex items-center justify-center mx-auto">
             <RefreshCw className="h-6 w-6 text-accent" />
@@ -185,7 +186,7 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
 
   if (errorMsg || !token) {
     return (
-      <div className="h-screen w-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+      <div className="h-[100dvh] w-screen bg-background flex flex-col items-center justify-center p-6 text-center">
         <div className="max-w-md w-full bg-card border border-border rounded-card p-8 space-y-4 shadow-2xl">
           <div className="h-12 w-12 rounded-full bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-center mx-auto">
             <AlertTriangle className="h-6 w-6" />
@@ -223,7 +224,7 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
       video={initialVideo}
       audio={initialAudio}
       data-lk-theme="default"
-      className="h-screen w-screen bg-background overflow-hidden flex flex-col"
+      className="h-[100dvh] w-screen bg-background overflow-hidden flex flex-col"
       onError={(err) => {
         console.error("LiveKit connection error:", err);
         toast.error(`Connection issue: ${err.message}`);
@@ -678,13 +679,15 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
   };
 
   return (
-    <div
-      className="relative h-screen w-screen overflow-hidden flex flex-col select-none bg-cover bg-top bg-no-repeat"
-      style={{
-        backgroundImage: "url('/room-bg.jpg')",
-        backgroundColor: "#F8FAFC",
-      }}
-    >
+    <div className="relative h-[100dvh] w-screen overflow-hidden flex flex-col select-none touch-manipulation">
+      {/* GPU-composited fixed background (Smooth 60fps with zero mobile repaints) */}
+      <div
+        className="fixed inset-0 pointer-events-none -z-10 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
+        style={{
+          backgroundImage: "url('/room-bg.jpg')",
+          backgroundColor: "#F8FAFC",
+        }}
+      />
       {/* Floating Reactions Overlay */}
       <ReactionsOverlay reactions={reactions} />
 
@@ -948,8 +951,8 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
         )}
       </div>
 
-      {/* Desktop Bottom Controls Bar - Floating Frosted Glass with Light Gradient Touchable Buttons */}
-      <footer className="h-20 border-t border-white/20 bg-white/55 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between shrink-0 z-20">
+      {/* Bottom Controls Bar - Floating Frosted Glass with Light Gradient Touchable Buttons */}
+      <footer className="h-20 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-white/20 bg-white/55 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between shrink-0 z-20">
         <div className="hidden md:flex items-center gap-2 text-xs text-slate-700">
           <span className="font-medium text-slate-900">{userName}</span>
           <span className="text-slate-400">•</span>

@@ -349,13 +349,15 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
   };
 
   return (
-    <div
-      className="min-h-screen text-slate-900 flex flex-col justify-between p-4 sm:p-8 bg-cover bg-top bg-no-repeat bg-fixed"
-      style={{
-        backgroundImage: "url('/room-bg.jpg')",
-        backgroundColor: "#F8FAFC",
-      }}
-    >
+    <div className="relative min-h-[100dvh] text-slate-900 flex flex-col justify-between p-4 sm:p-8 overflow-x-hidden">
+      {/* GPU-composited fixed background (Smooth 60fps scrolling with zero mobile repaints) */}
+      <div
+        className="fixed inset-0 pointer-events-none -z-10 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
+        style={{
+          backgroundImage: "url('/room-bg.jpg')",
+          backgroundColor: "#F8FAFC",
+        }}
+      />
       {/* Top Header */}
       <div className="flex items-center justify-between max-w-5xl mx-auto w-full mb-6">
         <Link

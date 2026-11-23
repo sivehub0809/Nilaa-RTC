@@ -58,13 +58,15 @@ export default function LandingPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col selection:bg-sky-200 selection:text-sky-900 bg-cover bg-top bg-no-repeat bg-fixed"
-      style={{
-        backgroundImage: "url('/background.jpg')",
-        backgroundColor: "#60A5FA",
-      }}
-    >
+    <div className="relative min-h-[100dvh] flex flex-col selection:bg-sky-200 selection:text-sky-900 overflow-x-hidden">
+      {/* GPU-composited fixed background (Smooth 60fps scrolling with zero mobile repaints) */}
+      <div
+        className="fixed inset-0 pointer-events-none -z-10 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
+        style={{
+          backgroundImage: "url('/background.jpg')",
+          backgroundColor: "#60A5FA",
+        }}
+      />
       {/* Transparent Navbar - Completely seamless with landing page background */}
       <header className="w-full bg-transparent">
         <div className="w-full flex h-20 sm:h-22 items-center justify-between px-6 sm:px-10 lg:px-14">
