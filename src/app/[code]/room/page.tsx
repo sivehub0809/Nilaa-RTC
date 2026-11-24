@@ -57,6 +57,7 @@ import { REACTION_EMOJIS } from "@/lib/constants";
 import { normalizeMeetingCode } from "@/lib/utils";
 import { CalmSpinner } from "@/components/ui/calm-spinner";
 import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 
 interface RoomPageProps {
   params: Promise<{
@@ -103,10 +104,20 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
       setIsDisconnected(false);
 
       try {
+        let headers: Record<string, string> = {};
+        try {
+          const supabase = createClient();
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            headers["Authorization"] = `Bearer ${session.access_token}`;
+          }
+        } catch {}
+
         const res = await fetch(
           `/api/livekit/token?room=${encodeURIComponent(code)}&username=${encodeURIComponent(
             userName
-          )}&isHost=${isHostParam ? "1" : "0"}`
+          )}&isHost=${isHostParam ? "1" : "0"}`,
+          { headers }
         );
         const data = await res.json();
 
@@ -231,8 +242,21 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
       data-lk-theme="default"
       className="h-[100dvh] w-screen bg-background overflow-hidden flex flex-col"
       onError={(err) => {
-        console.error("LiveKit connection error:", err);
-        toast.error(`Connection issue: ${err.message}`);
+        console.warn("LiveKit connection/media event:", err);
+        // Do not display false "Connection issue" for missing webcam/microphone hardware
+        const isDeviceError =
+          err.name === "NotFoundError" ||
+          err.name === "OverconstrainedError" ||
+          err.message?.toLowerCase().includes("device not found") ||
+          err.message?.toLowerCase().includes("requested device") ||
+          err.message?.toLowerCase().includes("devices not found");
+
+        if (isDeviceError) {
+          console.info("Hardware note: Camera or microphone device not detected.");
+          return;
+        }
+
+        toast.error(`Connection notice: ${err.message}`);
       }}
       onDisconnected={(reason) => {
         if (!userInitiatedLeave.current) {
@@ -385,16 +409,25 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
   // Presence Notifications (join/leave popups)
   const [presenceNotifications, setPresenceNotifications] = useState<PresenceNotification[]>([]);
   const prevParticipantIds = useRef<Set<string>>(new Set());
-  const isFirstMount = useRef(true);
+  const isRoomStabilized = useRef(false);
 
   useEffect(() => {
+    // Only track presence once the client is actively connected to the room
+    if (connectionState !== ConnectionState.Connected) {
+      isRoomStabilized.current = false;
+      prevParticipantIds.current = new Set(participants.map((p) => p.identity));
+      return;
+    }
+
     const currentIds = new Set(participants.map((p) => p.identity));
 
-    if (isFirstMount.current) {
-      // On first mount, record existing participants without showing notifications
+    // Wait 2.5s after room connect before firing join/leave popups so existing roster stabilizes
+    if (!isRoomStabilized.current) {
       prevParticipantIds.current = currentIds;
-      isFirstMount.current = false;
-      return;
+      const timer = setTimeout(() => {
+        isRoomStabilized.current = true;
+      }, 2500);
+      return () => clearTimeout(timer);
     }
 
     const newNotifications: PresenceNotification[] = [];
@@ -402,23 +435,28 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
     // Check who joined
     for (const p of participants) {
       if (!prevParticipantIds.current.has(p.identity) && !p.isLocal) {
-        newNotifications.push({
-          id: `${p.identity}-joined-${Date.now()}`,
-          name: p.name || p.identity,
-          type: "joined",
-        });
+        const joinName = p.name || p.identity;
+        if (joinName && joinName.trim() && !joinName.startsWith("gst_") && !joinName.startsWith("usr_")) {
+          newNotifications.push({
+            id: `${p.identity}-joined-${Date.now()}`,
+            name: joinName,
+            type: "joined",
+          });
+        }
       }
     }
 
     // Check who left
     for (const prevId of prevParticipantIds.current) {
       if (!currentIds.has(prevId)) {
-        const leftName = prevId.split("_")[0]; // strip session suffix we append
-        newNotifications.push({
-          id: `${prevId}-left-${Date.now()}`,
-          name: leftName,
-          type: "left",
-        });
+        const leftName = prevId.startsWith("usr_") || prevId.startsWith("gst_") ? "" : prevId.split("_")[0];
+        if (leftName && leftName.trim()) {
+          newNotifications.push({
+            id: `${prevId}-left-${Date.now()}`,
+            name: leftName,
+            type: "left",
+          });
+        }
       }
     }
 
@@ -434,7 +472,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
         }, 2500);
       });
     }
-  }, [participants]);
+  }, [participants, connectionState]);
 
   const toggleFitMode = (tileId: string) => {
     setFitModes((prev) => {
@@ -830,7 +868,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
       {/* Top Header Bar - Sleek Zoom Dark Glass */}
       <header className="h-14 border-b border-white/10 bg-[#0B0C0E]/90 backdrop-blur-xl px-4 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2 group">
+          <div className="flex items-center gap-2 select-none cursor-default">
             <div className="flex h-7 w-7 items-center justify-center rounded-full overflow-hidden border border-white/20">
               <Image
                 src="/nilaa-logo.jpg"
@@ -843,7 +881,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             <span className="font-heading text-sm font-bold tracking-tight text-white hidden sm:inline drop-shadow-xs">
               Nilaa <span className="text-sky-400 font-extrabold">RTC</span>
             </span>
-          </Link>
+          </div>
 
           <div className="h-4 w-[1px] bg-border hidden sm:block" />
 

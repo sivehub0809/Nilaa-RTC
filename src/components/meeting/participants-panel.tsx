@@ -147,15 +147,15 @@ export function ParticipantsPanel({
         ))}
       </div>
 
-      {/* Zoom-Style Action Footer (Clean Invite and Mute All, zero emoji clutter) */}
-      <div className="p-3 border-t border-slate-200 bg-white flex items-center gap-2 shrink-0">
+      {/* Zoom-Style Action Footer - Medium Well-Clickable Action Buttons */}
+      <div className="p-3.5 sm:p-4 border-t border-slate-200 bg-white flex items-center gap-2.5 shrink-0">
         <button
           type="button"
           onClick={handleInvite}
-          className="flex-1 h-9.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-800 font-medium text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
+          className="flex-1 h-11 sm:h-12 rounded-2xl bg-gradient-to-b from-sky-50 to-blue-50 hover:from-sky-100 hover:to-blue-100/90 text-sky-800 border border-sky-200 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs active:scale-95"
           title="Copy meeting invite link"
         >
-          <Share2 className="h-3.5 w-3.5 text-sky-600" />
+          <Share2 className="h-4 w-4 text-sky-600 shrink-0" />
           <span>Invite</span>
         </button>
 
@@ -163,10 +163,10 @@ export function ParticipantsPanel({
           <button
             type="button"
             onClick={onMuteAll}
-            className="flex-1 h-9.5 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-red-600 border border-transparent hover:border-red-200 text-slate-800 font-medium text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
+            className="flex-1 h-11 sm:h-12 rounded-2xl bg-slate-100 hover:bg-rose-50 hover:text-red-700 border border-slate-200 hover:border-red-200 text-slate-700 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs active:scale-95"
             title="Mute all other participants"
           >
-            <MicOff className="h-3.5 w-3.5 text-red-500" />
+            <MicOff className="h-4 w-4 text-red-500 shrink-0" />
             <span>Mute All</span>
           </button>
         )}

@@ -291,18 +291,38 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
       // 1. Generate ultra-lightweight circular WebP avatar blob (< 15KB)
       const blob = await cropAvatarToBlob(rawImageSrc, cropZoom, 192, 0.85);
 
-      // 2. Upload to Supabase Storage via our secure API route
+      // 2. Upload to Supabase Storage via our secure API route with auth token
       const formData = new FormData();
       formData.append("file", blob, "avatar.webp");
 
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {};
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
       const res = await fetch("/api/avatar/upload", {
         method: "POST",
+        headers,
         body: formData,
       });
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || "Failed to upload to storage");
+        // Fallback: convert compact blob to data URL so photo is always saved even if storage bucket is offline
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const fallbackDataUrl = reader.result as string;
+          setSettings((prev) => ({ ...prev, avatarUrl: fallbackDataUrl }));
+          await saveUserSettings({ avatarUrl: fallbackDataUrl });
+          onProfileUpdated?.();
+          setUploadingAvatar(false);
+          setCropModalOpen(false);
+          setRawImageSrc(null);
+          toast.success("Profile photo updated & saved!");
+        };
+        reader.readAsDataURL(blob);
+        return;
       }
 
       const data = await res.json();
@@ -312,7 +332,7 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
         throw new Error("No avatar URL returned from server");
       }
 
-      // 3. Save clean HTTPS public cloud URL (never save base64 to cookies/metadata)
+      // 3. Immediately save and broadcast update so user doesn't have to click another save button
       setSettings((prev) => ({ ...prev, avatarUrl: cloudAvatarUrl }));
       await saveUserSettings({ avatarUrl: cloudAvatarUrl });
       onProfileUpdated?.();
@@ -320,11 +340,28 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
       setUploadingAvatar(false);
       setCropModalOpen(false);
       setRawImageSrc(null);
-      toast.success("Profile photo optimized & saved!");
+      toast.success("Profile photo updated & saved!");
     } catch (err: any) {
       console.error("Avatar upload error:", err);
-      toast.error(err.message || "Failed to save profile photo. Please try again.");
-      setUploadingAvatar(false);
+      // Fallback to local storage persistence
+      try {
+        const blob = await cropAvatarToBlob(rawImageSrc, cropZoom, 192, 0.85);
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const fallbackDataUrl = reader.result as string;
+          setSettings((prev) => ({ ...prev, avatarUrl: fallbackDataUrl }));
+          await saveUserSettings({ avatarUrl: fallbackDataUrl });
+          onProfileUpdated?.();
+          setUploadingAvatar(false);
+          setCropModalOpen(false);
+          setRawImageSrc(null);
+          toast.success("Profile photo updated & saved!");
+        };
+        reader.readAsDataURL(blob);
+      } catch (fallbackErr) {
+        toast.error("Failed to save profile photo. Please try again.");
+        setUploadingAvatar(false);
+      }
     }
   };
 
@@ -332,7 +369,12 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
   const handleSave = async () => {
     setSaving(true);
     try {
-      await saveUserSettings(settings);
+      const latestCached = getCachedUserSettings();
+      const merged = {
+        ...settings,
+        avatarUrl: settings.avatarUrl || latestCached.avatarUrl,
+      };
+      await saveUserSettings(merged);
       onProfileUpdated?.();
       toast.success("Settings saved!");
       onClose();
@@ -644,7 +686,7 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
                 Cancel
               </Button>
               <Button variant="accent" size="sm" onClick={handleSaveCrop} disabled={uploadingAvatar} className="flex-1 text-xs font-semibold">
-                {uploadingAvatar ? "Saving..." : "Crop & Save"}
+                {uploadingAvatar ? "Saving..." : "Apply & Save Photo"}
               </Button>
             </div>
           </div>

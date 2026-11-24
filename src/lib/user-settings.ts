@@ -81,9 +81,9 @@ export async function fetchUserSettings(): Promise<UserSettings> {
       console.warn("Could not fetch from profiles table:", err);
     }
 
-    // Determine safe, persistent avatar URL (never base64)
+    // Determine safe, persistent avatar URL
     const rawAvatar = dbProfile?.avatar_url || meta.avatar_url || cached.avatarUrl;
-    const safeAvatar = rawAvatar && !rawAvatar.startsWith("data:") ? rawAvatar : null;
+    const safeAvatar = rawAvatar || null;
 
     // Determine display name
     const finalDisplayName = dbProfile?.display_name || meta.display_name || cached.displayName || user.email?.split("@")[0] || "";
@@ -135,16 +135,13 @@ export async function saveUserSettings(settings: Partial<UserSettings>): Promise
     }
 
     if (user) {
-      // NEVER put base64 data URLs into auth user_metadata cookies (exceeds Vercel 8KB header limit -> 494)
-      const safeCloudAvatar = updated.avatarUrl && !updated.avatarUrl.startsWith("data:") ? updated.avatarUrl : null;
-
       // 1. Sync to public.profiles table (Primary source of truth for persistent user profile)
       try {
         await (supabase.from("profiles") as any).upsert({
           id: user.id,
           email: user.email || "",
           display_name: updated.displayName,
-          avatar_url: safeCloudAvatar,
+          avatar_url: updated.avatarUrl || null,
           role: updated.role,
           updated_at: new Date().toISOString(),
         });
@@ -152,14 +149,15 @@ export async function saveUserSettings(settings: Partial<UserSettings>): Promise
         console.warn("profiles table upsert error:", e);
       }
 
-      // 2. Also update Supabase auth metadata
+      // 2. Also update Supabase auth metadata (guard against cookie overflow)
+      const safeCookieAvatar = updated.avatarUrl && updated.avatarUrl.startsWith("http") ? updated.avatarUrl : undefined;
       try {
         await supabase.auth.updateUser({
           data: {
             display_name: updated.displayName,
             role: updated.role,
             is_public: updated.isPublic,
-            avatar_url: safeCloudAvatar,
+            ...(safeCookieAvatar ? { avatar_url: safeCookieAvatar } : {}),
             auto_mute_on_join: updated.autoMuteOnJoin,
             auto_camera_off_on_join: updated.autoCameraOffOnJoin,
             noise_cancellation: updated.noiseCancellation,

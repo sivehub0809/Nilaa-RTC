@@ -5,34 +5,55 @@ import { cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Authenticate user from session cookies
-    const cookieStore = await cookies();
-    const supabaseUserClient = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {}
-          },
-        },
-      }
-    );
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseUserClient.auth.getUser();
+    if (!serviceRoleKey || !supabaseUrl) {
+      return NextResponse.json(
+        { error: "Supabase service configuration is missing" },
+        { status: 500 }
+      );
+    }
 
-    if (!user || userError) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+    // 1. Authenticate user from Bearer token OR session cookies
+    let user: any = null;
+    const authHeader = req.headers.get("authorization");
+    const bearerToken = authHeader?.replace(/^Bearer\s+/i, "");
+
+    if (bearerToken) {
+      try {
+        const { data: { user: tokenUser } } = await supabaseAdmin.auth.getUser(bearerToken);
+        if (tokenUser) user = tokenUser;
+      } catch {}
+    }
+
+    if (!user) {
+      try {
+        const cookieStore = await cookies();
+        const supabaseUserClient = createServerClient(
+          supabaseUrl,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+          {
+            cookies: {
+              getAll() {
+                return cookieStore.getAll();
+              },
+              setAll() {},
+            },
+          }
+        );
+
+        const {
+          data: { user: cookieUser },
+        } = await supabaseUserClient.auth.getUser();
+        if (cookieUser) user = cookieUser;
+      } catch {}
+    }
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized. Please sign in to save your profile photo." }, { status: 401 });
     }
 
     // 2. Read file from FormData
@@ -42,10 +63,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No image file provided" }, { status: 400 });
     }
 
-    // 3. Strict size limit check (max 2MB for cropped avatar)
-    if (file.size > 2 * 1024 * 1024) {
+    // 3. Size check (max 3MB for cropped avatar)
+    if (file.size > 3 * 1024 * 1024) {
       return NextResponse.json(
-        { error: "Image exceeds 2MB size limit" },
+        { error: "Image exceeds size limit" },
         { status: 400 }
       );
     }
@@ -62,20 +83,24 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // 5. Use Supabase admin client to upload to 'avatars' bucket
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-    if (!serviceRoleKey || !supabaseUrl) {
-      return NextResponse.json(
-        { error: "Supabase storage is not configured" },
-        { status: 500 }
-      );
+    // 5. Ensure avatars bucket exists
+    try {
+      const { data: buckets } = await supabaseAdmin.storage.listBuckets();
+      const bucketExists = buckets?.some((b) => b.name === "avatars");
+      if (!bucketExists) {
+        await supabaseAdmin.storage.createBucket("avatars", {
+          public: true,
+          fileSizeLimit: 2 * 1024 * 1024,
+        });
+      }
+    } catch (bucketErr) {
+      console.warn("Storage bucket check:", bucketErr);
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
-
+    // 6. Upload file to storage
     const filePath = `${user.id}/avatar.webp`;
+    let finalAvatarUrl: string | null = null;
+
     const { error: uploadError } = await supabaseAdmin.storage
       .from("avatars")
       .upload(filePath, buffer, {
@@ -83,38 +108,41 @@ export async function POST(req: NextRequest) {
         upsert: true,
       });
 
-    if (uploadError) {
-      console.error("Storage upload error:", uploadError);
-      return NextResponse.json(
-        { error: "Failed to upload to storage" },
-        { status: 500 }
-      );
+    if (!uploadError) {
+      const {
+        data: { publicUrl },
+      } = supabaseAdmin.storage.from("avatars").getPublicUrl(filePath);
+      finalAvatarUrl = `${publicUrl}?v=${Date.now()}`;
+    } else {
+      console.warn("Storage upload fallback:", uploadError);
+      // Fallback: If storage bucket policy rejects, encode compact base64 WebP for database
+      const base64Data = buffer.toString("base64");
+      finalAvatarUrl = `data:image/webp;base64,${base64Data}`;
     }
 
-    // 6. Get clean public HTTPS URL
-    const {
-      data: { publicUrl },
-    } = supabaseAdmin.storage.from("avatars").getPublicUrl(filePath);
-
-    // Append a timestamp cache-buster so browsers fetch the updated photo immediately
-    const finalAvatarUrl = `${publicUrl}?v=${Date.now()}`;
-
-    // 7. Update Supabase auth user_metadata with the short public URL
-    await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      user_metadata: {
-        ...user.user_metadata,
-        avatar_url: finalAvatarUrl,
-      },
-    });
-
-    // 8. Update profiles table if it exists
+    // 7. Update public.profiles table (Primary persistent source of truth)
     try {
       await supabaseAdmin.from("profiles").upsert({
         id: user.id,
         email: user.email || "",
         avatar_url: finalAvatarUrl,
+        updated_at: new Date().toISOString(),
       });
-    } catch {}
+    } catch (profErr) {
+      console.warn("Profiles table update error:", profErr);
+    }
+
+    // 8. Update Supabase auth user_metadata if it's a short URL
+    if (finalAvatarUrl.startsWith("http")) {
+      try {
+        await supabaseAdmin.auth.admin.updateUserById(user.id, {
+          user_metadata: {
+            ...user.user_metadata,
+            avatar_url: finalAvatarUrl,
+          },
+        });
+      } catch {}
+    }
 
     return NextResponse.json({
       success: true,
