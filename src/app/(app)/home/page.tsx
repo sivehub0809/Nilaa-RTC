@@ -44,6 +44,7 @@ export default function HomePage() {
   });
   const [joinCode, setJoinCode] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [isCheckingJoin, setIsCheckingJoin] = useState(false);
 
   // Settings & Green Room Drawer State
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -104,24 +105,47 @@ export default function HomePage() {
     router.refresh();
   };
 
-  const handleCreateInstantMeeting = () => {
+  const handleCreateInstantMeeting = async () => {
     setIsCreating(true);
     const code = generateMeetingCode();
     if (typeof window !== "undefined") {
       sessionStorage.setItem(`nilaa_host_${code}`, "1");
     }
+    try {
+      await fetch("/api/meetings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, title: `Meeting ${code}` }),
+      });
+    } catch (err) {
+      console.warn("Could not register meeting room:", err);
+    }
     toast.success(`Meeting room created: ${code}`);
     router.push(`/${code}?host=1`);
   };
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     const clean = normalizeMeetingCode(joinCode);
     if (!clean || clean.length < 4) {
       toast.error("Please enter a valid 6-character room code");
       return;
     }
-    router.push(`/${clean}`);
+    setIsCheckingJoin(true);
+    try {
+      const res = await fetch(`/api/meetings?code=${encodeURIComponent(clean)}`);
+      const data = await res.json();
+      if (!res.ok || !data.valid) {
+        toast.error(data.error || "This meeting code does not exist or has already ended");
+        setIsCheckingJoin(false);
+        return;
+      }
+      router.push(`/${clean}`);
+    } catch {
+      router.push(`/${clean}`);
+    } finally {
+      setIsCheckingJoin(false);
+    }
   };
 
   return (
@@ -189,8 +213,8 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Main Content Area: Clean, Spacious, Breathing Space */}
-      <main className="relative z-10 flex-1 container mx-auto max-w-4xl px-4 sm:px-6 py-12 sm:py-16 flex flex-col justify-center">
+      {/* Main Content Area: Shifted to Natural Upper Eye-Level */}
+      <main className="relative z-10 flex-1 container mx-auto max-w-4xl px-4 sm:px-6 pt-10 sm:pt-16 pb-12 sm:pb-16 flex flex-col justify-start">
         {/* Welcome Greeting - Left-aligned, Medium Geist Font, White Typography */}
         <div className="mb-8 sm:mb-10 text-left">
           <h1 className="font-sans text-2xl sm:text-3xl font-medium text-white tracking-tight drop-shadow-xs">

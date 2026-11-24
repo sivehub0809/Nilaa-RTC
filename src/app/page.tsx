@@ -30,6 +30,7 @@ export default function LandingPage() {
   const router = useRouter();
   const [meetingCode, setMeetingCode] = useState("");
   const [isStarting, setIsStarting] = useState(false);
+  const [isCheckingCode, setIsCheckingCode] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -82,24 +83,47 @@ export default function LandingPage() {
     };
   }, []);
 
-  const handleStartInstant = () => {
+  const handleStartInstant = async () => {
     setIsStarting(true);
     const code = generateMeetingCode();
     if (typeof window !== "undefined") {
       sessionStorage.setItem(`nilaa_host_${code}`, "1");
     }
+    try {
+      await fetch("/api/meetings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, title: `Meeting ${code}` }),
+      });
+    } catch (err) {
+      console.warn("Could not register meeting room:", err);
+    }
     toast.success(`Meeting room created: ${code}`);
     router.push(`/${code}?host=1`);
   };
 
-  const handleJoinWithCode = (e: React.FormEvent) => {
+  const handleJoinWithCode = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanCode = normalizeMeetingCode(meetingCode);
     if (!cleanCode || cleanCode.length < 4) {
       toast.error("Please enter a valid meeting code");
       return;
     }
-    router.push(`/${cleanCode}`);
+    setIsCheckingCode(true);
+    try {
+      const res = await fetch(`/api/meetings?code=${encodeURIComponent(cleanCode)}`);
+      const data = await res.json();
+      if (!res.ok || !data.valid) {
+        toast.error(data.error || "This meeting code does not exist or has already ended");
+        setIsCheckingCode(false);
+        return;
+      }
+      router.push(`/${cleanCode}`);
+    } catch {
+      router.push(`/${cleanCode}`);
+    } finally {
+      setIsCheckingCode(false);
+    }
   };
 
   return (

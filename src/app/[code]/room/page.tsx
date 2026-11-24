@@ -39,10 +39,14 @@ import {
   Minimize2,
   FlipHorizontal,
   SwitchCamera,
+  LogOut,
+  PowerOff,
+  AlertCircle,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyCode } from "@/components/motion/copy-code";
-import { ConnectionChip } from "@/components/meeting/connection-chip";
+import { MeetingTimer } from "@/components/meeting/meeting-timer";
 import { ReactionsOverlay, FloatingReaction } from "@/components/meeting/reactions-overlay";
 import { ChatPanel, ChatMessage } from "@/components/meeting/chat-panel";
 import { ParticipantsPanel, ParticipantItem } from "@/components/meeting/participants-panel";
@@ -284,6 +288,40 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
 
+  // Host End Meeting & Eviction States
+  const [isEndCallModalOpen, setIsEndCallModalOpen] = useState(false);
+  const [isMeetingEndedByHost, setIsMeetingEndedByHost] = useState(false);
+  const [isEndingMeeting, setIsEndingMeeting] = useState(false);
+
+  // Mobile-compatible screen sharing handler
+  const handleToggleScreenShare = async () => {
+    try {
+      if (!isScreenShareEnabled) {
+        if (
+          typeof navigator === "undefined" ||
+          !navigator.mediaDevices ||
+          typeof navigator.mediaDevices.getDisplayMedia !== "function"
+        ) {
+          toast.error("Screen sharing is not supported by your mobile browser. Please use Chrome or Safari.");
+          return;
+        }
+        await localParticipant.setScreenShareEnabled(true);
+        toast.success("Sharing screen");
+      } else {
+        await localParticipant.setScreenShareEnabled(false);
+        toast("Screen sharing stopped");
+      }
+    } catch (err: unknown) {
+      const error = err as Error;
+      if (error.name === "NotAllowedError" || error.name === "AbortError") {
+        // User dismissed OS screen broadcast prompt
+        return;
+      }
+      console.warn("Screen share error:", err);
+      toast.error("Could not share screen on this device");
+    }
+  };
+
   // Video Fit Mode per tile
   const [fitModes, setFitModes] = useState<Record<string, "contain" | "cover">>({});
 
@@ -468,6 +506,10 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
           room.disconnect();
           router.push("/");
         }
+      } else if (data.type === "meeting_ended_by_host" || data.type === "room_ended") {
+        setIsMeetingEndedByHost(true);
+        onLeave();
+        room.disconnect();
       }
     } catch (e) {
       console.warn("Failed to parse data message:", e);
@@ -630,12 +672,61 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
     [send, isCurrentUserHost, participants, localParticipant.identity]
   );
 
-  // Leave room
-  const handleLeaveRoom = () => {
+  // Leave room execution
+  const executeLeaveRoom = () => {
     onLeave();
     room.disconnect();
     toast("You left the meeting");
-    router.push("/");
+    router.push("/home");
+  };
+
+  // Leave room entrypoint
+  const handleLeaveRoom = () => {
+    if (isCurrentUserHost) {
+      setIsEndCallModalOpen(true);
+    } else {
+      executeLeaveRoom();
+    }
+  };
+
+  // Host leaves alone (End for you)
+  const handleHostLeaveAlone = () => {
+    setIsEndCallModalOpen(false);
+    executeLeaveRoom();
+  };
+
+  // Host ends for all (End for all)
+  const handleHostEndForAll = async () => {
+    setIsEndingMeeting(true);
+    try {
+      // 1. Broadcast to all participants via data channel
+      const payload = JSON.stringify({
+        type: "meeting_ended_by_host",
+        senderIdentity: localParticipant.identity,
+        code,
+      });
+      send(new TextEncoder().encode(payload), { reliable: true });
+
+      // 2. Mark meeting as ended in database
+      await fetch("/api/meetings", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem(`nilaa_host_${code}`);
+      }
+      toast.success("Meeting ended for all participants");
+    } catch (err) {
+      console.warn("Error ending meeting for all:", err);
+    } finally {
+      setIsEndingMeeting(false);
+      setIsEndCallModalOpen(false);
+      onLeave();
+      room.disconnect();
+      router.push("/home");
+    }
   };
 
   // Convert LiveKit participants into list items with accurate host assignment
@@ -719,8 +810,8 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
         </div>
 
         <div className="flex items-center gap-2.5">
-          {/* Connection Chip */}
-          <ConnectionChip />
+          {/* Meeting Duration Timer in Geist Vercel font */}
+          <MeetingTimer />
 
           {/* Quick Mobile Chat Button */}
           <button
@@ -960,12 +1051,12 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
         </div>
 
         {/* Primary Call Controls */}
-        <div className="flex items-center gap-2.5 sm:gap-3.5 mx-auto">
+        <div className="flex items-center gap-2 sm:gap-3.5 mx-auto">
           {/* Mic Button */}
           <button
             type="button"
             onClick={() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)}
-            className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               isMicrophoneEnabled
                 ? "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
                 : "bg-gradient-to-b from-rose-500 to-red-600 text-white shadow-md shadow-red-500/25 hover:brightness-105"
@@ -984,7 +1075,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
           <button
             type="button"
             onClick={() => localParticipant.setCameraEnabled(!isCameraEnabled)}
-            className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               isCameraEnabled
                 ? "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
                 : "bg-gradient-to-b from-rose-500 to-red-600 text-white shadow-md shadow-red-500/25 hover:brightness-105"
@@ -999,11 +1090,11 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             )}
           </button>
 
-          {/* Screen Share Button */}
+          {/* Screen Share Button - Mobile and Desktop Enabled */}
           <button
             type="button"
-            onClick={() => localParticipant.setScreenShareEnabled(!isScreenShareEnabled)}
-            className={`h-12 w-12 rounded-2xl hidden sm:flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            onClick={handleToggleScreenShare}
+            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               isScreenShareEnabled
                 ? "bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/30"
                 : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
@@ -1011,14 +1102,14 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             title={isScreenShareEnabled ? "Stop Sharing Screen" : "Share Screen"}
             aria-label="Toggle Screen Share"
           >
-            <Share2 className={`h-5 w-5 ${isScreenShareEnabled ? "text-white" : "text-slate-700"}`} />
+            <Share2 className={`h-4.5 w-4.5 sm:h-5 sm:w-5 ${isScreenShareEnabled ? "text-white" : "text-slate-700"}`} />
           </button>
 
           {/* Raise Hand Button */}
           <button
             type="button"
             onClick={toggleHand}
-            className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               isHandRaised
                 ? "bg-gradient-to-b from-amber-400 to-yellow-500 text-white shadow-md shadow-yellow-500/30"
                 : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
@@ -1026,7 +1117,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             title={isHandRaised ? "Lower Hand" : "Raise Hand"}
             aria-label="Raise or Lower Hand"
           >
-            <Hand className={`h-5 w-5 ${isHandRaised ? "text-white fill-white" : "text-slate-700"}`} />
+            <Hand className={`h-4.5 w-4.5 sm:h-5 sm:w-5 ${isHandRaised ? "text-white fill-white" : "text-slate-700"}`} />
           </button>
 
           {/* Emoji Reactions Button */}
@@ -1127,13 +1218,111 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
         isHandRaised={isHandRaised}
         onToggleAudio={() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)}
         onToggleVideo={() => localParticipant.setCameraEnabled(!isCameraEnabled)}
-        onToggleScreenShare={() => localParticipant.setScreenShareEnabled(!isScreenShareEnabled)}
+        onToggleScreenShare={handleToggleScreenShare}
         onToggleHand={toggleHand}
         onOpenChat={() => setActivePanel("chat")}
         onOpenParticipants={() => setActivePanel("participants")}
         onSendReaction={triggerReaction}
         onLeave={handleLeaveRoom}
       />
+
+      {/* Host End Meeting Options Modal (Zoom-style: End for All vs End for You) */}
+      <AnimatePresence>
+        {isEndCallModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-sm sm:max-w-md p-6 sm:p-7 rounded-3xl bg-slate-900/95 border border-white/15 shadow-2xl space-y-5 text-center"
+            >
+              <div className="h-12 w-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto shadow-inner">
+                <PowerOff className="h-6 w-6" />
+              </div>
+
+              <div>
+                <h3 className="font-heading text-lg sm:text-xl font-bold text-white tracking-tight">
+                  End Meeting
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300/80 mt-1">
+                  You are the host. Choose whether to end this meeting for everyone or leave it active for others.
+                </p>
+              </div>
+
+              <div className="space-y-2.5 pt-1">
+                {/* Option 1: End Meeting for All */}
+                <button
+                  type="button"
+                  onClick={handleHostEndForAll}
+                  disabled={isEndingMeeting}
+                  className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-medium text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-red-500/25 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                >
+                  <PowerOff className="h-4 w-4" />
+                  <span>{isEndingMeeting ? "Ending for all..." : "End Meeting for All"}</span>
+                </button>
+
+                {/* Option 2: Leave Meeting (End for you) */}
+                <button
+                  type="button"
+                  onClick={handleHostLeaveAlone}
+                  disabled={isEndingMeeting}
+                  className="w-full py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-medium text-sm flex items-center justify-center gap-2.5 transition-all duration-150 cursor-pointer active:scale-[0.98]"
+                >
+                  <LogOut className="h-4 w-4 text-sky-400" />
+                  <span>Leave Meeting (Others stay)</span>
+                </button>
+
+                {/* Option 3: Cancel */}
+                <button
+                  type="button"
+                  onClick={() => setIsEndCallModalOpen(false)}
+                  disabled={isEndingMeeting}
+                  className="w-full py-2.5 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Participant Meeting Ended by Host Notification */}
+      <AnimatePresence>
+        {isMeetingEndedByHost && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="relative w-full max-w-sm sm:max-w-md p-6 sm:p-8 rounded-3xl bg-slate-900/95 border border-white/15 shadow-2xl text-center space-y-5"
+            >
+              <div className="h-14 w-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-inner">
+                <AlertCircle className="h-7 w-7" />
+              </div>
+
+              <div>
+                <h3 className="font-heading text-xl font-bold text-white tracking-tight">
+                  Meeting Ended by Host
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300/80 mt-1.5 leading-relaxed">
+                  The host has ended this meeting for all participants. The room code is no longer active.
+                </p>
+              </div>
+
+              <div className="pt-2 flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => router.push("/home")}
+                  className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-sky-400 to-blue-600 hover:from-sky-500 hover:to-blue-700 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-sky-500/25 transition-all duration-150 cursor-pointer active:scale-[0.98]"
+                >
+                  <Home className="h-4 w-4" />
+                  <span>Return to Home</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

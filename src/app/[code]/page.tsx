@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, use, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Video,
   VideoOff,
@@ -19,6 +19,9 @@ import {
   RefreshCw,
   FlipHorizontal,
   SwitchCamera,
+  AlertCircle,
+  KeyRound,
+  Home,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +65,84 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isJoining, setIsJoining] = useState(false);
   const [fitMode, setFitMode] = useState<"contain" | "cover">("contain");
+
+  // Room existence & status validation
+  const [isValidatingRoom, setIsValidatingRoom] = useState(true);
+  const [isRoomUnavailable, setIsRoomUnavailable] = useState(false);
+  const [unavailableReason, setUnavailableReason] = useState("");
+  const [retryCodeInput, setRetryCodeInput] = useState("");
+  const [isCheckingRetry, setIsCheckingRetry] = useState(false);
+
+  // Validate room existence and register host room if needed
+  useEffect(() => {
+    let active = true;
+
+    async function checkMeetingRoom() {
+      const isHost =
+        searchParams.get("host") === "1" ||
+        (typeof window !== "undefined" &&
+          sessionStorage.getItem(`nilaa_host_${code}`) === "1");
+
+      if (isHost) {
+        try {
+          await fetch("/api/meetings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, title: `Meeting ${code}` }),
+          });
+        } catch {}
+        if (active) setIsValidatingRoom(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/meetings?code=${encodeURIComponent(code)}`);
+        const data = await res.json();
+
+        if (!active) return;
+
+        if (!res.ok || !data.valid) {
+          setIsRoomUnavailable(true);
+          setUnavailableReason(
+            data.error || "This meeting room does not exist or has already ended."
+          );
+        }
+      } catch (err) {
+        console.warn("Could not check meeting room status:", err);
+      } finally {
+        if (active) setIsValidatingRoom(false);
+      }
+    }
+
+    checkMeetingRoom();
+
+    return () => {
+      active = false;
+    };
+  }, [code, searchParams]);
+
+  const handleRetrySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = normalizeMeetingCode(retryCodeInput);
+    if (!clean || clean.length < 4) {
+      toast.error("Please enter a valid 6-character room code");
+      return;
+    }
+    setIsCheckingRetry(true);
+    try {
+      const res = await fetch(`/api/meetings?code=${encodeURIComponent(clean)}`);
+      const data = await res.json();
+      if (!res.ok || !data.valid) {
+        toast.error(data.error || "This meeting code does not exist or has already ended");
+        return;
+      }
+      router.push(`/${clean}`);
+    } catch {
+      router.push(`/${clean}`);
+    } finally {
+      setIsCheckingRetry(false);
+    }
+  };
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -612,6 +693,66 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
           </div>
         </div>
       )}
+
+      {/* Meeting Unavailable Modal Notice */}
+      <AnimatePresence>
+        {isRoomUnavailable && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-md p-6 sm:p-8 rounded-3xl bg-slate-900/95 border border-white/15 shadow-2xl text-center space-y-5"
+            >
+              <div className="h-14 w-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-inner">
+                <AlertCircle className="h-7 w-7" />
+              </div>
+
+              <div>
+                <h3 className="font-heading text-xl sm:text-2xl font-bold text-white tracking-tight">
+                  Meeting Unavailable
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300/80 mt-1.5 leading-relaxed">
+                  {unavailableReason || "This meeting room does not exist or has already ended."}
+                </p>
+              </div>
+
+              <form onSubmit={handleRetrySubmit} className="space-y-3 pt-2">
+                <div className="relative">
+                  <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={retryCodeInput}
+                    onChange={(e) => setRetryCodeInput(e.target.value.toUpperCase())}
+                    placeholder="Enter another room code"
+                    maxLength={10}
+                    className="w-full h-11 pl-10 pr-3 rounded-xl bg-slate-800/80 border border-white/10 text-white placeholder:text-slate-500 text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-sky-400"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isCheckingRetry || !retryCodeInput.trim()}
+                  className="w-full h-11 rounded-xl bg-gradient-to-r from-sky-400 to-blue-600 hover:from-sky-500 hover:to-blue-700 text-white font-medium text-sm transition-all duration-150 cursor-pointer disabled:opacity-50 active:scale-[0.98] shadow-md shadow-sky-500/20"
+                >
+                  {isCheckingRetry ? "Checking code..." : "Join with this Code"}
+                </button>
+              </form>
+
+              <div className="pt-1 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => router.push("/home")}
+                  className="w-full h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Home className="h-3.5 w-3.5" />
+                  <span>Return to Home</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Bottom Footer Note */}
       <div className="text-center text-xs text-slate-400 py-4">

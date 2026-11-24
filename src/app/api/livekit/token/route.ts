@@ -1,16 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AccessToken } from "livekit-server-sdk";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(req: NextRequest) {
   const room = req.nextUrl.searchParams.get("room");
   const rawUsername = req.nextUrl.searchParams.get("username") || "Participant";
   const username = rawUsername.trim() || "Participant";
+  const isHost = req.nextUrl.searchParams.get("isHost") === "1";
 
   if (!room) {
     return NextResponse.json(
       { error: 'Missing "room" query parameter' },
       { status: 400 }
     );
+  }
+
+  const cleanRoom = room.trim().toUpperCase();
+
+  // Validate room existence in Supabase database
+  try {
+    const supabase = createAdminClient();
+    const { data: meeting, error: dbErr } = await (supabase.from("meetings") as any)
+      .select("id, code, is_active")
+      .eq("code", cleanRoom)
+      .maybeSingle();
+
+    if (!dbErr) {
+      if (!meeting) {
+        if (isHost) {
+          // If host is connecting first, ensure the room is registered as active
+          await (supabase.from("meetings") as any).upsert([
+            {
+              code: cleanRoom,
+              title: `Meeting ${cleanRoom}`,
+              is_active: true,
+              ended_at: null,
+            },
+          ]);
+        } else {
+          // Random or non-existent code entered by guest - strictly reject!
+          return NextResponse.json(
+            {
+              error: "This meeting code does not exist or has not been created yet.",
+              roomUnavailable: true,
+            },
+            { status: 404 }
+          );
+        }
+      } else if (meeting.is_active === false) {
+        // Meeting has ended
+        return NextResponse.json(
+          {
+            error: "This meeting has already ended by the host.",
+            roomUnavailable: true,
+          },
+          { status: 410 }
+        );
+      }
+    }
+  } catch (err) {
+    console.warn("Room validation check error:", err);
+    // Proceed if Supabase check threw unexpected connection issue so we don't block in offline dev
   }
 
   const apiKey = process.env.LIVEKIT_API_KEY;
@@ -44,7 +94,6 @@ export async function GET(req: NextRequest) {
     const randomSuffix = Math.random().toString(36).substring(2, 8);
     const cleanPrefix = username.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12) || "user";
     const uniqueIdentity = `${cleanPrefix}_${randomSuffix}`;
-    const isHost = req.nextUrl.searchParams.get("isHost") === "1";
 
     const at = new AccessToken(apiKey, apiSecret, {
       identity: uniqueIdentity,
@@ -54,7 +103,7 @@ export async function GET(req: NextRequest) {
     });
 
     at.addGrant({
-      room,
+      room: cleanRoom,
       roomJoin: true,
       canPublish: true,
       canSubscribe: true,
