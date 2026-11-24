@@ -31,6 +31,7 @@ import { createClient } from "@/lib/supabase/client";
 import { normalizeMeetingCode } from "@/lib/utils";
 import { getCachedUserSettings, fetchUserSettings } from "@/lib/user-settings";
 import { CalmSpinner } from "@/components/ui/calm-spinner";
+import { InvalidCodeModal } from "@/components/meeting/invalid-code-modal";
 import { toast } from "sonner";
 
 interface PreJoinPageProps {
@@ -694,65 +695,13 @@ export default function PreJoinPage({ params }: PreJoinPageProps) {
         </div>
       )}
 
-      {/* Meeting Unavailable Modal Notice */}
-      <AnimatePresence>
-        {isRoomUnavailable && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-md p-6 sm:p-8 rounded-3xl bg-slate-900/95 border border-white/15 shadow-2xl text-center space-y-5"
-            >
-              <div className="h-14 w-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-inner">
-                <AlertCircle className="h-7 w-7" />
-              </div>
-
-              <div>
-                <h3 className="font-heading text-xl sm:text-2xl font-bold text-white tracking-tight">
-                  Meeting Unavailable
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-300/80 mt-1.5 leading-relaxed">
-                  {unavailableReason || "This meeting room does not exist or has already ended."}
-                </p>
-              </div>
-
-              <form onSubmit={handleRetrySubmit} className="space-y-3 pt-2">
-                <div className="relative">
-                  <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <input
-                    type="text"
-                    value={retryCodeInput}
-                    onChange={(e) => setRetryCodeInput(e.target.value.toUpperCase())}
-                    placeholder="Enter another room code"
-                    maxLength={10}
-                    className="w-full h-11 pl-10 pr-3 rounded-xl bg-slate-800/80 border border-white/10 text-white placeholder:text-slate-500 text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-sky-400"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isCheckingRetry || !retryCodeInput.trim()}
-                  className="w-full h-11 rounded-xl bg-gradient-to-r from-sky-400 to-blue-600 hover:from-sky-500 hover:to-blue-700 text-white font-medium text-sm transition-all duration-150 cursor-pointer disabled:opacity-50 active:scale-[0.98] shadow-md shadow-sky-500/20"
-                >
-                  {isCheckingRetry ? "Checking code..." : "Join with this Code"}
-                </button>
-              </form>
-
-              <div className="pt-1 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={() => router.push("/home")}
-                  className="w-full h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer"
-                >
-                  <Home className="h-3.5 w-3.5" />
-                  <span>Return to Home</span>
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Meeting Unavailable Centered Modal */}
+      <InvalidCodeModal
+        isOpen={isRoomUnavailable}
+        onClose={() => router.push("/home")}
+        initialCode={code}
+        message="This code is unavailable or has ended."
+      />
 
       {/* Bottom Footer Note */}
       <div className="text-center text-xs text-slate-400 py-4">

@@ -288,8 +288,8 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
 
-  // Host End Meeting & Eviction States
-  const [isEndCallModalOpen, setIsEndCallModalOpen] = useState(false);
+  // Leave Meeting & Eviction States
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [isMeetingEndedByHost, setIsMeetingEndedByHost] = useState(false);
   const [isEndingMeeting, setIsEndingMeeting] = useState(false);
 
@@ -674,24 +674,20 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
 
   // Leave room execution
   const executeLeaveRoom = () => {
+    setIsLeaveModalOpen(false);
     onLeave();
     room.disconnect();
     toast("You left the meeting");
     router.push("/home");
   };
 
-  // Leave room entrypoint
+  // Leave room entrypoint (opens simplified confirmation modal for all users)
   const handleLeaveRoom = () => {
-    if (isCurrentUserHost) {
-      setIsEndCallModalOpen(true);
-    } else {
-      executeLeaveRoom();
-    }
+    setIsLeaveModalOpen(true);
   };
 
   // Host leaves alone (End for you)
   const handleHostLeaveAlone = () => {
-    setIsEndCallModalOpen(false);
     executeLeaveRoom();
   };
 
@@ -722,7 +718,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
       console.warn("Error ending meeting for all:", err);
     } finally {
       setIsEndingMeeting(false);
-      setIsEndCallModalOpen(false);
+      setIsLeaveModalOpen(false);
       onLeave();
       room.disconnect();
       router.push("/home");
@@ -1226,94 +1222,107 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
         onLeave={handleLeaveRoom}
       />
 
-      {/* Host End Meeting Options Modal (Zoom-style: End for All vs End for You) */}
+      {/* Leave Meeting Confirmation Modal (Ultra-minimal: No walls of text) */}
       <AnimatePresence>
-        {isEndCallModalOpen && (
+        {isLeaveModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-sm sm:max-w-md p-6 sm:p-7 rounded-3xl bg-slate-900/95 border border-white/15 shadow-2xl space-y-5 text-center"
+              className="relative w-full max-w-xs sm:max-w-sm p-6 sm:p-7 rounded-3xl bg-slate-900/95 border border-white/15 shadow-2xl text-center space-y-4"
             >
               <div className="h-12 w-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto shadow-inner">
                 <PowerOff className="h-6 w-6" />
               </div>
 
-              <div>
-                <h3 className="font-heading text-lg sm:text-xl font-bold text-white tracking-tight">
-                  End Meeting
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-300/80 mt-1">
-                  You are the host. Choose whether to end this meeting for everyone or leave it active for others.
-                </p>
-              </div>
+              <h3 className="font-heading text-lg sm:text-xl font-bold text-white tracking-tight">
+                Leave meeting?
+              </h3>
 
-              <div className="space-y-2.5 pt-1">
-                {/* Option 1: End Meeting for All */}
-                <button
-                  type="button"
-                  onClick={handleHostEndForAll}
-                  disabled={isEndingMeeting}
-                  className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-medium text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-red-500/25 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-50"
-                >
-                  <PowerOff className="h-4 w-4" />
-                  <span>{isEndingMeeting ? "Ending for all..." : "End Meeting for All"}</span>
-                </button>
+              {isCurrentUserHost ? (
+                /* Host Leave Actions */
+                <div className="space-y-2.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleHostEndForAll}
+                    disabled={isEndingMeeting}
+                    className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-md shadow-red-500/25 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                  >
+                    <PowerOff className="h-4 w-4" />
+                    <span>{isEndingMeeting ? "Ending..." : "End for All"}</span>
+                  </button>
 
-                {/* Option 2: Leave Meeting (End for you) */}
-                <button
-                  type="button"
-                  onClick={handleHostLeaveAlone}
-                  disabled={isEndingMeeting}
-                  className="w-full py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-medium text-sm flex items-center justify-center gap-2.5 transition-all duration-150 cursor-pointer active:scale-[0.98]"
-                >
-                  <LogOut className="h-4 w-4 text-sky-400" />
-                  <span>Leave Meeting (Others stay)</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleHostLeaveAlone}
+                    disabled={isEndingMeeting}
+                    className="w-full py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-medium text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4 text-sky-400" />
+                    <span>Leave Call</span>
+                  </button>
 
-                {/* Option 3: Cancel */}
-                <button
-                  type="button"
-                  onClick={() => setIsEndCallModalOpen(false)}
-                  disabled={isEndingMeeting}
-                  className="w-full py-2.5 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsLeaveModalOpen(false)}
+                    disabled={isEndingMeeting}
+                    className="w-full py-2 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                /* Guest Normal Leave Actions (Are you sure or Cancel) */
+                <div className="flex items-center gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsLeaveModalOpen(false)}
+                    className="flex-1 py-3 px-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-medium text-sm transition-all active:scale-95 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={executeLeaveRoom}
+                    className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-medium text-sm shadow-md shadow-red-500/25 transition-all active:scale-95 cursor-pointer"
+                  >
+                    Leave
+                  </button>
+                </div>
+              )}
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* Participant Meeting Ended by Host Notification */}
+      {/* Participant Evicted When Host Ends Meeting */}
       <AnimatePresence>
         {isMeetingEndedByHost && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              className="relative w-full max-w-sm sm:max-w-md p-6 sm:p-8 rounded-3xl bg-slate-900/95 border border-white/15 shadow-2xl text-center space-y-5"
+              className="relative w-full max-w-xs sm:max-w-sm p-6 sm:p-7 rounded-3xl bg-slate-900/95 border border-white/15 shadow-2xl text-center space-y-4"
             >
-              <div className="h-14 w-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-inner">
-                <AlertCircle className="h-7 w-7" />
+              <div className="h-12 w-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-inner">
+                <AlertCircle className="h-6 w-6" />
               </div>
 
               <div>
-                <h3 className="font-heading text-xl font-bold text-white tracking-tight">
-                  Meeting Ended by Host
+                <h3 className="font-heading text-lg sm:text-xl font-bold text-white tracking-tight">
+                  Meeting Ended
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-300/80 mt-1.5 leading-relaxed">
-                  The host has ended this meeting for all participants. The room code is no longer active.
+                <p className="text-xs text-slate-400 mt-1">
+                  The host has ended this call.
                 </p>
               </div>
 
-              <div className="pt-2 flex flex-col gap-2.5">
+              <div className="pt-2">
                 <button
                   type="button"
                   onClick={() => router.push("/home")}
-                  className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-sky-400 to-blue-600 hover:from-sky-500 hover:to-blue-700 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-sky-500/25 transition-all duration-150 cursor-pointer active:scale-[0.98]"
+                  className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-sky-400 to-blue-600 hover:from-sky-500 hover:to-blue-700 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-sky-500/25 transition-all active:scale-[0.98] cursor-pointer"
                 >
                   <Home className="h-4 w-4" />
                   <span>Return to Home</span>

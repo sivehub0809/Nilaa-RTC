@@ -24,6 +24,7 @@ import { fetchUserSettings, getCachedUserSettings, type UserSettings } from "@/l
 import { getOrRestoreSession, persistSessionBackup, clearSessionBackup } from "@/lib/supabase/auth-helper";
 import { type User as SupabaseUser } from "@supabase/supabase-js";
 import { InstallPwaButton } from "@/components/ui/install-pwa-button";
+import { InvalidCodeModal } from "@/components/meeting/invalid-code-modal";
 import { toast } from "sonner";
 
 export default function LandingPage() {
@@ -31,6 +32,7 @@ export default function LandingPage() {
   const [meetingCode, setMeetingCode] = useState("");
   const [isStarting, setIsStarting] = useState(false);
   const [isCheckingCode, setIsCheckingCode] = useState(false);
+  const [isInvalidModalOpen, setIsInvalidModalOpen] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -106,7 +108,7 @@ export default function LandingPage() {
     e.preventDefault();
     const cleanCode = normalizeMeetingCode(meetingCode);
     if (!cleanCode || cleanCode.length < 4) {
-      toast.error("Please enter a valid meeting code");
+      setIsInvalidModalOpen(true);
       return;
     }
     setIsCheckingCode(true);
@@ -114,7 +116,7 @@ export default function LandingPage() {
       const res = await fetch(`/api/meetings?code=${encodeURIComponent(cleanCode)}`);
       const data = await res.json();
       if (!res.ok || !data.valid) {
-        toast.error(data.error || "This meeting code does not exist or has already ended");
+        setIsInvalidModalOpen(true);
         setIsCheckingCode(false);
         return;
       }
@@ -506,6 +508,13 @@ export default function LandingPage() {
       <footer className="relative z-10 border-t border-sky-100/70 bg-white/50 backdrop-blur-xs py-6 px-4 text-center text-xs text-slate-500">
         <p>© 2026 Nilaa RTC. Real-time video conferencing for professionals & friends.</p>
       </footer>
+
+      {/* Centered Meeting Code Invalid / Unavailable Modal */}
+      <InvalidCodeModal
+        isOpen={isInvalidModalOpen}
+        onClose={() => setIsInvalidModalOpen(false)}
+        initialCode={meetingCode}
+      />
     </div>
   );
 }

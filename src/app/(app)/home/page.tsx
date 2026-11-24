@@ -19,11 +19,13 @@ import { getCachedUserSettings, fetchUserSettings } from "@/lib/user-settings";
 import { getOrRestoreSession, persistSessionBackup, clearSessionBackup } from "@/lib/supabase/auth-helper";
 import { GreenRoomDrawer } from "@/components/meeting/green-room-drawer";
 import { InstallPwaButton } from "@/components/ui/install-pwa-button";
+import { InvalidCodeModal } from "@/components/meeting/invalid-code-modal";
 import { type User as SupabaseUser } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
 export default function HomePage() {
   const router = useRouter();
+  const [isInvalidModalOpen, setIsInvalidModalOpen] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -128,7 +130,7 @@ export default function HomePage() {
     e.preventDefault();
     const clean = normalizeMeetingCode(joinCode);
     if (!clean || clean.length < 4) {
-      toast.error("Please enter a valid 6-character room code");
+      setIsInvalidModalOpen(true);
       return;
     }
     setIsCheckingJoin(true);
@@ -136,7 +138,7 @@ export default function HomePage() {
       const res = await fetch(`/api/meetings?code=${encodeURIComponent(clean)}`);
       const data = await res.json();
       if (!res.ok || !data.valid) {
-        toast.error(data.error || "This meeting code does not exist or has already ended");
+        setIsInvalidModalOpen(true);
         setIsCheckingJoin(false);
         return;
       }
@@ -298,6 +300,13 @@ export default function HomePage() {
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         onProfileUpdated={refreshProfile}
+      />
+
+      {/* Centered Meeting Code Invalid / Unavailable Modal */}
+      <InvalidCodeModal
+        isOpen={isInvalidModalOpen}
+        onClose={() => setIsInvalidModalOpen(false)}
+        initialCode={joinCode}
       />
     </div>
   );
