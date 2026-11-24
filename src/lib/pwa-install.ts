@@ -53,12 +53,22 @@ export function detectPlatform(): PlatformType {
   if (typeof window === "undefined") return "windows";
 
   const ua = window.navigator.userAgent.toLowerCase();
-  const platform = (window.navigator as any).userAgentData?.platform?.toLowerCase() || window.navigator.platform?.toLowerCase() || "";
+  const platform =
+    (window.navigator as any).userAgentData?.platform?.toLowerCase() ||
+    window.navigator.platform?.toLowerCase() ||
+    "";
 
+  // 1. Check mobile devices FIRST (iOS / Android) before desktop OS
+  const isIos =
+    /iphone|ipad|ipod/.test(ua) ||
+    (platform === "macintel" && typeof navigator !== "undefined" && navigator.maxTouchPoints > 1);
+  if (isIos) return "ios";
+
+  if (/android/.test(ua)) return "android";
+
+  // 2. Check desktop OS
   if (platform.includes("win") || ua.includes("windows")) return "windows";
   if (platform.includes("mac") || ua.includes("macintosh") || ua.includes("mac os x")) return "mac";
-  if (/iphone|ipad|ipod/.test(ua)) return "ios";
-  if (/android/.test(ua)) return "android";
   if (platform.includes("linux") || ua.includes("linux")) return "linux";
 
   return "other";

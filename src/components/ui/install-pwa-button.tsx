@@ -41,7 +41,11 @@ export function InstallPwaButton({ className = "", variant = "primary" }: Instal
     const result = await promptInstall();
     if (result === "accepted") {
       markAsInstalled();
-      toast.success("Nilaa RTC installed! Launch it anytime from your Windows Taskbar or Start Menu.");
+      toast.success(
+        platform === "windows"
+          ? "Nilaa RTC installed! Launch it anytime from your Windows Taskbar or Start Menu."
+          : "Nilaa RTC added to your home screen!"
+      );
       return;
     }
 
@@ -49,10 +53,35 @@ export function InstallPwaButton({ className = "", variant = "primary" }: Instal
       return;
     }
 
-    // 2. If prompt is unavailable (e.g. already installed in browser or shields active)
+    // 2. Platform-specific guidance & already-installed notifications
+    if (platform === "windows") {
+      toast.info(
+        "Nilaa RTC is ready on your PC! Open it from your Windows Start Menu or Taskbar.",
+        { duration: 5000 }
+      );
+      return;
+    }
+
+    if (platform === "ios") {
+      toast.info(
+        "Tap Share (⎋) at the bottom, then choose 'Add to Home Screen' to install.",
+        { duration: 6000 }
+      );
+      return;
+    }
+
+    if (platform === "android") {
+      toast.info(
+        "Tap the menu (⋮) in Chrome, then choose 'Add to Home screen' or 'Install app'.",
+        { duration: 5000 }
+      );
+      return;
+    }
+
+    // Mac & other desktop
     toast.info(
-      "Nilaa RTC installs right through your browser! Look for the Install icon (⊕) on the right side of your address bar, or search 'Nilaa RTC' in Windows Start if already installed.",
-      { duration: 6000 }
+      "Nilaa RTC is installable through your browser! Look for the Install icon (⊕) in your address bar.",
+      { duration: 5000 }
     );
   };
 
