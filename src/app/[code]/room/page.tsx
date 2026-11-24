@@ -43,6 +43,7 @@ import {
   PowerOff,
   AlertCircle,
   X,
+  LayoutGrid,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyCode } from "@/components/motion/copy-code";
@@ -293,6 +294,25 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
   const [isMeetingEndedByHost, setIsMeetingEndedByHost] = useState(false);
   const [isEndingMeeting, setIsEndingMeeting] = useState(false);
 
+  // Speaker Spotlight State (Double-click or double-tap to focus)
+  const [spotlightTileId, setSpotlightTileId] = useState<string | null>(null);
+  const lastTapRef = useRef<{ [key: string]: number }>({});
+
+  const handleTileDoubleAction = (tileId: string) => {
+    setSpotlightTileId((prev) => (prev === tileId ? null : tileId));
+  };
+
+  const handleTileTouchEnd = (tileId: string) => {
+    const now = Date.now();
+    const lastTap = lastTapRef.current[tileId] || 0;
+    if (now - lastTap < 350) {
+      handleTileDoubleAction(tileId);
+      lastTapRef.current[tileId] = 0;
+    } else {
+      lastTapRef.current[tileId] = now;
+    }
+  };
+
   // Mobile-compatible screen sharing handler
   const handleToggleScreenShare = async () => {
     try {
@@ -506,6 +526,11 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
           room.disconnect();
           router.push("/");
         }
+      } else if (data.type === "mute_all_request") {
+        if (!isCurrentUserHost) {
+          localParticipant.setMicrophoneEnabled(false);
+          toast("You were muted by the host");
+        }
       } else if (data.type === "meeting_ended_by_host" || data.type === "room_ended") {
         setIsMeetingEndedByHost(true);
         onLeave();
@@ -672,6 +697,21 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
     [send, isCurrentUserHost, participants, localParticipant.identity]
   );
 
+  // Host Mutes All Participants (Zoom feature)
+  const handleMuteAll = useCallback(() => {
+    if (!isCurrentUserHost) return;
+    try {
+      const payload = JSON.stringify({
+        type: "mute_all_request",
+        senderIdentity: localParticipant.identity,
+      });
+      send(new TextEncoder().encode(payload), { reliable: true });
+      toast.success("Muted all participants");
+    } catch (err) {
+      console.warn("Mute all error:", err);
+    }
+  }, [isCurrentUserHost, localParticipant.identity, send]);
+
   // Leave room execution
   const executeLeaveRoom = () => {
     setIsLeaveModalOpen(false);
@@ -765,6 +805,17 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
     return "grid-cols-2 sm:grid-cols-5";
   };
 
+  // Check active spotlight
+  const isSpotlightActive =
+    !!spotlightTileId &&
+    tracks.some((t) => `${t.participant.identity}_${t.source}` === spotlightTileId);
+  const spotlightTrack = isSpotlightActive
+    ? tracks.find((t) => `${t.participant.identity}_${t.source}` === spotlightTileId)
+    : null;
+  const otherTracks = isSpotlightActive
+    ? tracks.filter((t) => `${t.participant.identity}_${t.source}` !== spotlightTileId)
+    : [];
+
   return (
     <div className="relative h-[100dvh] w-screen overflow-hidden flex flex-col select-none touch-manipulation">
       {/* GPU-composited fixed background with user's atmospheric dark gradient asset */}
@@ -808,69 +859,96 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
         <div className="flex items-center gap-2.5">
           {/* Meeting Duration Timer in Geist Vercel font */}
           <MeetingTimer />
-
-          {/* Quick Mobile Chat Button */}
-          <button
-            type="button"
-            onClick={() => setActivePanel(activePanel === "chat" ? null : "chat")}
-            className={`lg:hidden h-9 w-9 rounded-xl flex items-center justify-center relative transition-all duration-150 cursor-pointer active:scale-90 ${
-              activePanel === "chat"
-                ? "bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-sm"
-                : "bg-gradient-to-b from-white/90 to-slate-100/90 text-slate-700 hover:text-slate-900 border border-slate-200/80 shadow-xs"
-            }`}
-            title="Chat"
-            aria-label="Open chat"
-          >
-            <MessageSquare className="h-4 w-4" />
-            {messages.length > 1 && (
-              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-blue-500" />
-            )}
-          </button>
-
-          {/* Mobile Hamburger */}
-          <button
-            type="button"
-            onClick={() => setIsMobileDrawerOpen(true)}
-            className="lg:hidden h-9 w-9 rounded-xl flex items-center justify-center bg-gradient-to-b from-white/90 to-slate-100/90 text-slate-700 hover:text-slate-900 border border-slate-200/80 shadow-xs transition-all duration-150 cursor-pointer active:scale-90"
-            aria-label="Open controls drawer"
-          >
-            <Menu className="h-4.5 w-4.5" />
-          </button>
         </div>
       </header>
 
       {/* Main Area: Video Grid + Side Panels */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Video Grid */}
-        <main className="flex-1 p-3 sm:p-5 flex items-center justify-center overflow-y-auto">
-          <div
-            className={`grid ${getGridClasses(
-              tracks.length || 1
-            )} gap-3 sm:gap-4 w-full h-full max-h-[85vh] items-center justify-center`}
-          >
-            {tracks.length === 0 ? (
-              <div className="relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-2xl overflow-hidden bg-white/70 border border-white/80 backdrop-blur-xl shadow-2xl shadow-sky-950/10 flex flex-col items-center justify-center text-slate-700 p-6">
-                <CalmSpinner size="md" text="Connecting audio & video..." />
-              </div>
-            ) : (
-              tracks.map((trackRef) => {
+        {/* Main Video Area: Spotlight Mode OR Balanced Grid Mode */}
+        <main className="flex-1 p-2 sm:p-4 md:p-5 flex flex-col items-center justify-center overflow-hidden relative">
+          {tracks.length === 0 ? (
+            <div className="relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-2xl overflow-hidden bg-white/70 border border-white/80 backdrop-blur-xl shadow-2xl shadow-sky-950/10 flex flex-col items-center justify-center text-slate-700 p-6">
+              <CalmSpinner size="md" text="Connecting audio & video..." />
+            </div>
+          ) : isSpotlightActive && spotlightTrack ? (
+            /* Spotlight Mode: Compact Filmstrip along top + Expanded Speaker Stage */
+            <div className="w-full h-full flex flex-col gap-2 sm:gap-3 overflow-hidden">
+              {/* Top Filmstrip of Other Participants */}
+              {otherTracks.length > 0 && (
+                <div className="w-full flex items-center gap-2 sm:gap-3 overflow-x-auto py-1 px-1 shrink-0 scrollbar-thin scrollbar-thumb-white/20">
+                  {otherTracks.map((trackRef) => {
+                    const tileId = `${trackRef.participant.identity}_${trackRef.source}`;
+                    const isSpeaking = speakingIdentities.has(trackRef.participant.identity);
+                    const isLocal = trackRef.participant.isLocal;
+                    const handRaised = !!raisedHandParticipants[trackRef.participant.identity];
+                    const pName = trackRef.participant.name || trackRef.participant.identity;
+                    const hasVideo = trackRef.publication && !trackRef.publication.isMuted;
+                    const isScreenShare = trackRef.source === Track.Source.ScreenShare;
+
+                    return (
+                      <div
+                        key={tileId}
+                        onClick={() => handleTileDoubleAction(tileId)}
+                        className={`relative h-20 sm:h-24 md:h-28 aspect-video rounded-xl overflow-hidden bg-slate-900/90 border cursor-pointer shrink-0 transition-all duration-150 hover:scale-[1.02] active:scale-95 shadow-md ${
+                          isSpeaking
+                            ? "border-sky-400 ring-2 ring-sky-400/40"
+                            : "border-white/20 hover:border-white/40"
+                        }`}
+                        title={`Click to focus on ${pName}`}
+                      >
+                        {hasVideo ? (
+                          <VideoTrack
+                            trackRef={trackRef}
+                            className={`w-full h-full object-cover ${
+                              isLocal && !isScreenShare && isLocalMirrored ? "-scale-x-100" : "scale-x-100"
+                            }`}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 text-white gap-1">
+                            <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center font-heading text-xs font-bold">
+                              {pName.charAt(0).toUpperCase()}
+                            </div>
+                          </div>
+                        )}
+                        <div className="absolute bottom-1 left-1.5 right-1.5 flex items-center justify-between pointer-events-none z-10">
+                          <span className="text-[10px] text-white/95 bg-black/60 backdrop-blur-xs px-1.5 py-0.5 rounded-sm truncate max-w-[85px]">
+                            {pName} {isLocal && "(You)"}
+                          </span>
+                          {trackRef.participant.isMicrophoneEnabled ? (
+                            <Mic className="h-2.5 w-2.5 text-sky-400" />
+                          ) : (
+                            <MicOff className="h-2.5 w-2.5 text-red-400" />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Main Expanded Spotlight Stage */}
+              {(() => {
+                const trackRef = spotlightTrack;
+                const tileId = `${trackRef.participant.identity}_${trackRef.source}`;
                 const isSpeaking = speakingIdentities.has(trackRef.participant.identity);
                 const isLocal = trackRef.participant.isLocal;
                 const handRaised = !!raisedHandParticipants[trackRef.participant.identity];
                 const pName = trackRef.participant.name || trackRef.participant.identity;
                 const hasVideo = trackRef.publication && !trackRef.publication.isMuted;
-                const tileId = `${trackRef.participant.identity}_${trackRef.source}`;
                 const isScreenShare = trackRef.source === Track.Source.ScreenShare;
                 const currentFit = isScreenShare ? "contain" : (fitModes[tileId] || "contain");
 
                 return (
                   <div
                     key={tileId}
-                    className={`relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-2xl overflow-hidden bg-slate-900/90 shadow-2xl shadow-sky-950/20 flex items-center justify-center transition-all duration-200 group ${
+                    onDoubleClick={() => handleTileDoubleAction(tileId)}
+                    onTouchEnd={() => handleTileTouchEnd(tileId)}
+                    className={`relative flex-1 w-full h-full min-h-0 rounded-2xl overflow-hidden bg-slate-900/95 shadow-2xl shadow-sky-950/20 flex items-center justify-center transition-all duration-200 group cursor-pointer ${
                       isSpeaking ? "speaker-active-ring" : ""
                     }`}
+                    title="Double click or tap to exit spotlight"
                   >
-                    {/* Continuous connected line border around rounded corners (not dots) */}
+                    {/* Continuous connected line border around rounded corners */}
                     <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-2xl z-20">
                       <rect
                         x="1.5"
@@ -882,7 +960,6 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                         stroke={isSpeaking ? "#0284C7" : "rgba(56, 189, 248, 0.55)"}
                         strokeWidth="1.5"
                       />
-                      {/* Flowing continuous light beam when speaking (continuous line, not dots) */}
                       {isSpeaking && (
                         <rect
                           x="1.5"
@@ -898,6 +975,176 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                         />
                       )}
                     </svg>
+
+                    {/* Exit Focus / Grid View Floating Pill */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSpotlightTileId(null);
+                      }}
+                      className="absolute top-3 left-3 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/25 text-white text-xs font-medium transition-all active:scale-95 shadow-md cursor-pointer"
+                      title="Return to balanced grid"
+                    >
+                      <LayoutGrid className="h-3.5 w-3.5 text-sky-400" />
+                      <span>Grid View</span>
+                    </button>
+
+                    {/* Video Track */}
+                    {hasVideo ? (
+                      <VideoTrack
+                        trackRef={trackRef}
+                        className={`w-full h-full ${
+                          currentFit === "contain" ? "object-contain" : "object-cover"
+                        } ${
+                          isLocal && !isScreenShare && isLocalMirrored ? "-scale-x-100" : "scale-x-100"
+                        } transition-all duration-200`}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/85 backdrop-blur-md gap-3">
+                        <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-heading text-2xl sm:text-3xl font-bold shadow-lg">
+                          {pName.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-sm text-sky-100/70 font-light">Camera Off</span>
+                      </div>
+                    )}
+
+                    {/* Participant Name & Status Pill */}
+                    <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 text-xs z-10 text-white">
+                      <span className="font-medium text-white truncate max-w-[140px]">
+                        {pName} {isLocal && "(You)"}
+                      </span>
+                      {handRaised && (
+                        <Hand className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                      )}
+                      {trackRef.participant.isMicrophoneEnabled ? (
+                        <Mic className="h-3 w-3 text-sky-400" />
+                      ) : (
+                        <MicOff className="h-3 w-3 text-red-400" />
+                      )}
+                    </div>
+
+                    {/* Top Right Controls */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                      {isSpeaking && (
+                        <div
+                          className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                          style={{
+                            background: "linear-gradient(135deg, rgba(96,165,250,0.25) 0%, rgba(147,197,253,0.18) 100%)",
+                            borderColor: "rgba(96,165,250,0.4)",
+                            color: "#93C5FD",
+                          }}
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-ping" />
+                          <span>Speaking</span>
+                        </div>
+                      )}
+
+                      {/* Mirror / Flip for local */}
+                      {isLocal && !isScreenShare && hasVideo && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleFlipCamera();
+                            }}
+                            className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                            title="Flip camera front/back"
+                          >
+                            <SwitchCamera className="h-3.5 w-3.5 text-accent" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleLocalMirror();
+                            }}
+                            className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                            title={isLocalMirrored ? "Disable mirror view" : "Enable mirror view"}
+                          >
+                            <FlipHorizontal className={`h-3.5 w-3.5 ${isLocalMirrored ? "text-accent" : ""}`} />
+                          </button>
+                        </>
+                      )}
+
+                      {!isScreenShare && hasVideo && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFitMode(tileId);
+                          }}
+                          className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                          title={currentFit === "contain" ? "Crop to fill box" : "Fit whole video in box"}
+                        >
+                          {currentFit === "contain" ? (
+                            <Maximize2 className="h-3.5 w-3.5 text-accent" />
+                          ) : (
+                            <Minimize2 className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          ) : (
+            /* Regular Grid View */
+            <div
+              className={`grid ${getGridClasses(
+                tracks.length || 1
+              )} gap-3 sm:gap-4 w-full h-full max-h-[85vh] items-center justify-center overflow-y-auto`}
+            >
+              {tracks.map((trackRef) => {
+                const isSpeaking = speakingIdentities.has(trackRef.participant.identity);
+                const isLocal = trackRef.participant.isLocal;
+                const handRaised = !!raisedHandParticipants[trackRef.participant.identity];
+                const pName = trackRef.participant.name || trackRef.participant.identity;
+                const hasVideo = trackRef.publication && !trackRef.publication.isMuted;
+                const tileId = `${trackRef.participant.identity}_${trackRef.source}`;
+                const isScreenShare = trackRef.source === Track.Source.ScreenShare;
+                const currentFit = isScreenShare ? "contain" : (fitModes[tileId] || "contain");
+
+                return (
+                  <div
+                    key={tileId}
+                    onDoubleClick={() => handleTileDoubleAction(tileId)}
+                    onTouchEnd={() => handleTileTouchEnd(tileId)}
+                    className={`relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-2xl overflow-hidden bg-slate-900/90 shadow-2xl shadow-sky-950/20 flex items-center justify-center transition-all duration-200 group cursor-pointer ${
+                      isSpeaking ? "speaker-active-ring" : ""
+                    }`}
+                    title="Double click or tap to spotlight speaker"
+                  >
+                    {/* Continuous connected line border around rounded corners */}
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-2xl z-20">
+                      <rect
+                        x="1.5"
+                        y="1.5"
+                        style={{ width: "calc(100% - 3px)", height: "calc(100% - 3px)" }}
+                        rx="15"
+                        ry="15"
+                        fill="none"
+                        stroke={isSpeaking ? "#0284C7" : "rgba(56, 189, 248, 0.55)"}
+                        strokeWidth="1.5"
+                      />
+                      {isSpeaking && (
+                        <rect
+                          x="1.5"
+                          y="1.5"
+                          style={{ width: "calc(100% - 3px)", height: "calc(100% - 3px)" }}
+                          rx="15"
+                          ry="15"
+                          fill="none"
+                          stroke="#38BDF8"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          className="running-beam"
+                        />
+                      )}
+                    </svg>
+
                     {/* Live Video Track */}
                     {hasVideo ? (
                       <VideoTrack
@@ -953,7 +1200,10 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                         <>
                           <button
                             type="button"
-                            onClick={handleFlipCamera}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleFlipCamera();
+                            }}
                             className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
                             title="Flip camera front/back"
                             aria-label="Flip camera front or back"
@@ -962,7 +1212,10 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                           </button>
                           <button
                             type="button"
-                            onClick={toggleLocalMirror}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleLocalMirror();
+                            }}
                             className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
                             title={isLocalMirrored ? "Disable mirror view" : "Enable mirror view"}
                             aria-label="Toggle camera mirror view"
@@ -975,7 +1228,10 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                       {!isScreenShare && hasVideo && (
                         <button
                           type="button"
-                          onClick={() => toggleFitMode(tileId)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFitMode(tileId);
+                          }}
                           className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
                           title={
                             currentFit === "contain"
@@ -994,9 +1250,9 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                     </div>
                   </div>
                 );
-              })
-            )}
-          </div>
+              })}
+            </div>
+          )}
         </main>
 
         {/* Side Panel: Chat (Desktop: Sidebar, Mobile: Full-height Slide Overlay) */}
@@ -1029,8 +1285,10 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
               <ParticipantsPanel
                 participants={participantListItems}
                 isCurrentUserHost={isCurrentUserHost}
+                meetingCode={code}
                 onMuteParticipant={handleMuteParticipant}
                 onRemoveParticipant={handleRemoveParticipant}
+                onMuteAll={handleMuteAll}
                 onClose={() => setActivePanel(null)}
               />
             </aside>
@@ -1038,21 +1296,15 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
         )}
       </div>
 
-      {/* Bottom Controls Bar - Floating Frosted Glass with Light Gradient Touchable Buttons */}
-      <footer className="h-20 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-white/10 bg-slate-950/60 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between shrink-0 z-20">
-        <div className="hidden md:flex items-center gap-2 text-xs text-white/80">
-          <span className="font-medium text-white">{userName}</span>
-          <span className="text-white/40">•</span>
-          <span className="text-slate-300">{participants.length} connected (Max 15)</span>
-        </div>
-
-        {/* Primary Call Controls */}
-        <div className="flex items-center gap-2 sm:gap-3.5 mx-auto">
+      {/* Bottom Controls Bar - Zoom Style Reorganized Layout (Touchable on Desktop & Mobile) */}
+      <footer className="h-20 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-white/10 bg-slate-950/60 backdrop-blur-xl px-2 sm:px-4 md:px-6 flex items-center justify-between shrink-0 z-20">
+        {/* Left Section: Mic & Camera Buttons */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
           {/* Mic Button */}
           <button
             type="button"
             onClick={() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)}
-            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               isMicrophoneEnabled
                 ? "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
                 : "bg-gradient-to-b from-rose-500 to-red-600 text-white shadow-md shadow-red-500/25 hover:brightness-105"
@@ -1061,9 +1313,9 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             aria-label={isMicrophoneEnabled ? "Mute Microphone" : "Unmute Microphone"}
           >
             {isMicrophoneEnabled ? (
-              <Mic className="h-5 w-5 text-sky-600" />
+              <Mic className="h-4 w-4 sm:h-5 sm:w-5 text-sky-600" />
             ) : (
-              <MicOff className="h-5 w-5 text-white" />
+              <MicOff className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             )}
           </button>
 
@@ -1071,7 +1323,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
           <button
             type="button"
             onClick={() => localParticipant.setCameraEnabled(!isCameraEnabled)}
-            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               isCameraEnabled
                 ? "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
                 : "bg-gradient-to-b from-rose-500 to-red-600 text-white shadow-md shadow-red-500/25 hover:brightness-105"
@@ -1080,17 +1332,20 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             aria-label={isCameraEnabled ? "Turn Off Camera" : "Turn On Camera"}
           >
             {isCameraEnabled ? (
-              <VideoIcon className="h-5 w-5 text-sky-600" />
+              <VideoIcon className="h-4 w-4 sm:h-5 sm:w-5 text-sky-600" />
             ) : (
-              <VideoOff className="h-5 w-5 text-white" />
+              <VideoOff className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             )}
           </button>
+        </div>
 
-          {/* Screen Share Button - Mobile and Desktop Enabled */}
+        {/* Center Section: Screen Share, Raise Hand, and Emoji Reactions */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 mx-auto">
+          {/* Screen Share Button */}
           <button
             type="button"
             onClick={handleToggleScreenShare}
-            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               isScreenShareEnabled
                 ? "bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/30"
                 : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
@@ -1098,14 +1353,14 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             title={isScreenShareEnabled ? "Stop Sharing Screen" : "Share Screen"}
             aria-label="Toggle Screen Share"
           >
-            <Share2 className={`h-4.5 w-4.5 sm:h-5 sm:w-5 ${isScreenShareEnabled ? "text-white" : "text-slate-700"}`} />
+            <Share2 className={`h-4 w-4 sm:h-5 sm:w-5 ${isScreenShareEnabled ? "text-white" : "text-slate-700"}`} />
           </button>
 
           {/* Raise Hand Button */}
           <button
             type="button"
             onClick={toggleHand}
-            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               isHandRaised
                 ? "bg-gradient-to-b from-amber-400 to-yellow-500 text-white shadow-md shadow-yellow-500/30"
                 : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
@@ -1113,7 +1368,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             title={isHandRaised ? "Lower Hand" : "Raise Hand"}
             aria-label="Raise or Lower Hand"
           >
-            <Hand className={`h-4.5 w-4.5 sm:h-5 sm:w-5 ${isHandRaised ? "text-white fill-white" : "text-slate-700"}`} />
+            <Hand className={`h-4 w-4 sm:h-5 sm:w-5 ${isHandRaised ? "text-white fill-white" : "text-slate-700"}`} />
           </button>
 
           {/* Emoji Reactions Button */}
@@ -1121,7 +1376,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             <button
               type="button"
               onClick={() => setIsReactionMenuOpen(!isReactionMenuOpen)}
-              className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+              className={`h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
                 isReactionMenuOpen
                   ? "bg-gradient-to-b from-sky-100 to-blue-100 text-blue-700 border border-sky-300/80 shadow-sm"
                   : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
@@ -1129,7 +1384,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
               title="Send Reaction"
               aria-label="Send Reaction"
             >
-              <Smile className={`h-5 w-5 ${isReactionMenuOpen ? "text-blue-600" : "text-slate-700"}`} />
+              <Smile className={`h-4 w-4 sm:h-5 sm:w-5 ${isReactionMenuOpen ? "text-blue-600" : "text-slate-700"}`} />
             </button>
 
             <AnimatePresence>
@@ -1138,13 +1393,13 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-2 bg-white/95 backdrop-blur-xl border border-sky-100 rounded-2xl shadow-2xl z-30"
+                  className="absolute bottom-14 sm:bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-1 sm:gap-1.5 p-1.5 sm:p-2 bg-white/95 backdrop-blur-xl border border-sky-100 rounded-2xl shadow-2xl z-30"
                 >
                   {REACTION_EMOJIS.map((emoji) => (
                     <button
                       key={emoji}
                       onClick={() => triggerReaction(emoji)}
-                      className="h-10 w-10 flex items-center justify-center text-xl hover:bg-sky-50 rounded-xl active:scale-85 transition-transform cursor-pointer"
+                      className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center text-lg sm:text-xl hover:bg-sky-50 rounded-xl active:scale-85 transition-transform cursor-pointer"
                     >
                       {emoji}
                     </button>
@@ -1153,39 +1408,29 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
               )}
             </AnimatePresence>
           </div>
-
-          {/* Leave Call Button */}
-          <button
-            type="button"
-            onClick={handleLeaveRoom}
-            className="h-12 px-6 rounded-2xl font-medium text-sm flex items-center gap-2 bg-gradient-to-b from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white shadow-md shadow-red-500/25 transition-all duration-150 cursor-pointer active:scale-92 active:brightness-95"
-            title="Leave Meeting"
-            aria-label="Leave Meeting"
-          >
-            <PhoneOff className="h-4.5 w-4.5" />
-            <span className="hidden sm:inline">Leave</span>
-          </button>
         </div>
 
-        {/* Right Panel Toggles */}
-        <div className="hidden md:flex items-center gap-2.5">
+        {/* Right Section: Chat, Participants, and Leave Call */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
+          {/* Chat Button */}
           <button
             type="button"
             onClick={() => setActivePanel(activePanel === "chat" ? null : "chat")}
             title="In-call chat"
             aria-label="Toggle in-call chat"
-            className={`h-11 w-11 rounded-2xl flex items-center justify-center relative transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center relative transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               activePanel === "chat"
                 ? "bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/30"
                 : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
             }`}
           >
-            <MessageSquare className="h-4.5 w-4.5" />
+            <MessageSquare className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
             {messages.length > 1 && (
               <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-blue-500 border-2 border-white" />
             )}
           </button>
 
+          {/* Participants Button */}
           <button
             type="button"
             onClick={() =>
@@ -1193,13 +1438,32 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             }
             title="People in room"
             aria-label="Toggle people list"
-            className={`h-11 w-11 rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center relative transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               activePanel === "participants"
                 ? "bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/30"
                 : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
             }`}
           >
-            <Users className="h-4.5 w-4.5" />
+            <Users className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+            {participants.length > 1 && (
+              <span className="absolute -top-1 -right-1 px-1 min-w-[16px] h-4 rounded-full bg-slate-800 text-[10px] text-white font-bold flex items-center justify-center border border-white/50">
+                {participants.length}
+              </span>
+            )}
+          </button>
+
+          {/* Leave Call Button (1.5x Darker Red Gradient + Specular Top Sheen) */}
+          <button
+            type="button"
+            onClick={handleLeaveRoom}
+            className="group relative h-9 sm:h-11 md:h-12 px-3 sm:px-4 md:px-5 rounded-xl sm:rounded-2xl font-medium text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 bg-gradient-to-b from-red-600 via-rose-700 to-red-800 hover:from-red-500 hover:to-red-700 border-t border-white/30 border-x border-b border-red-900/60 text-white shadow-lg shadow-red-950/40 transition-all duration-150 cursor-pointer active:scale-92 active:brightness-95 overflow-hidden"
+            title="Leave Meeting"
+            aria-label="Leave Meeting"
+          >
+            {/* Liquid specular highlight sheen */}
+            <span className="pointer-events-none absolute inset-x-2 sm:inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+            <PhoneOff className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white shrink-0" />
+            <span className="hidden xs:inline sm:inline">Leave</span>
           </button>
         </div>
       </footer>
@@ -1222,7 +1486,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
         onLeave={handleLeaveRoom}
       />
 
-      {/* Leave Meeting Confirmation Modal (Ultra-minimal: No walls of text) */}
+      {/* Leave Meeting Confirmation Modal (Exact Match to User Mockup Card 2) */}
       <AnimatePresence>
         {isLeaveModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
@@ -1232,63 +1496,75 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
               exit={{ opacity: 0, scale: 0.95 }}
               className="relative w-full max-w-xs sm:max-w-sm p-6 sm:p-7 rounded-3xl bg-slate-900/95 border border-white/15 shadow-2xl text-center space-y-4"
             >
-              <div className="h-12 w-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto shadow-inner">
-                <PowerOff className="h-6 w-6" />
+              <div>
+                <h3 className="font-heading text-xl sm:text-2xl font-bold text-white tracking-tight">
+                  Leave meeting?
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1.5">
+                  You can leave the call without ending it for other participants.
+                </p>
               </div>
-
-              <h3 className="font-heading text-lg sm:text-xl font-bold text-white tracking-tight">
-                Leave meeting?
-              </h3>
 
               {isCurrentUserHost ? (
                 /* Host Leave Actions */
-                <div className="space-y-2.5 pt-1">
+                <div className="space-y-2.5 pt-2">
+                  {/* End for All Button (1.5x Darker Red + White Gradient Mix) */}
                   <button
                     type="button"
                     onClick={handleHostEndForAll}
                     disabled={isEndingMeeting}
-                    className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-md shadow-red-500/25 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                    className="group relative w-full h-12 rounded-2xl bg-gradient-to-b from-red-600 via-rose-700 to-red-800 hover:from-red-500 hover:to-red-700 border-t border-white/30 border-x border-b border-red-900/60 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-red-950/40 active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer overflow-hidden"
                   >
+                    <span className="pointer-events-none absolute inset-x-4 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
                     <PowerOff className="h-4 w-4" />
                     <span>{isEndingMeeting ? "Ending..." : "End for All"}</span>
                   </button>
 
+                  {/* Leave Call Button (Frosted Dark Glass) */}
                   <button
                     type="button"
                     onClick={handleHostLeaveAlone}
                     disabled={isEndingMeeting}
-                    className="w-full py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-medium text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+                    className="w-full h-12 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 text-white font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer"
                   >
                     <LogOut className="h-4 w-4 text-sky-400" />
                     <span>Leave Call</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setIsLeaveModalOpen(false)}
-                    disabled={isEndingMeeting}
-                    className="w-full py-2 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
+                  {/* Cancel Link */}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsLeaveModalOpen(false)}
+                      disabled={isEndingMeeting}
+                      className="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               ) : (
-                /* Guest Normal Leave Actions (Are you sure or Cancel) */
-                <div className="flex items-center gap-2.5 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsLeaveModalOpen(false)}
-                    className="flex-1 py-3 px-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-medium text-sm transition-all active:scale-95 cursor-pointer"
-                  >
-                    Cancel
-                  </button>
+                /* Guest Normal Leave Actions (Matching User Mockup Card 2) */
+                <div className="space-y-2.5 pt-2">
                   <button
                     type="button"
                     onClick={executeLeaveRoom}
-                    className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-medium text-sm shadow-md shadow-red-500/25 transition-all active:scale-95 cursor-pointer"
+                    className="group relative w-full h-12 rounded-2xl bg-gradient-to-b from-red-600 via-rose-700 to-red-800 hover:from-red-500 hover:to-red-700 border-t border-white/30 border-x border-b border-red-900/60 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-red-950/40 active:scale-[0.98] transition-all cursor-pointer overflow-hidden"
                   >
-                    Leave
+                    <span className="pointer-events-none absolute inset-x-4 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+                    <LogOut className="h-4 w-4" />
+                    <span>Leave Call</span>
                   </button>
+
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsLeaveModalOpen(false)}
+                      className="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               )}
             </motion.div>

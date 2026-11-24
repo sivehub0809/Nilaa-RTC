@@ -1,7 +1,8 @@
 "use client";
 
-import { X, Users, Mic, MicOff, Video, VideoOff, Crown, Hand, Ban } from "lucide-react";
+import { X, Users, Mic, MicOff, Video, VideoOff, Crown, Hand, Ban, Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 export interface ParticipantItem {
   id: string;
@@ -17,18 +18,29 @@ export interface ParticipantItem {
 interface ParticipantsPanelProps {
   participants: ParticipantItem[];
   isCurrentUserHost?: boolean;
+  meetingCode?: string;
   onMuteParticipant?: (id: string) => void;
   onRemoveParticipant?: (id: string) => void;
+  onMuteAll?: () => void;
   onClose: () => void;
 }
 
 export function ParticipantsPanel({
   participants,
   isCurrentUserHost = false,
+  meetingCode = "",
   onMuteParticipant,
   onRemoveParticipant,
+  onMuteAll,
   onClose,
 }: ParticipantsPanelProps) {
+  const handleInvite = () => {
+    if (typeof window !== "undefined") {
+      const inviteUrl = window.location.origin + "/" + meetingCode;
+      navigator.clipboard.writeText(inviteUrl);
+      toast.success("Meeting link copied to clipboard");
+    }
+  };
   return (
     <div className="flex flex-col h-full bg-white border-l border-slate-200 w-full select-none">
       {/* Header */}
@@ -133,6 +145,31 @@ export function ParticipantsPanel({
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Zoom-Style Action Footer (Clean Invite and Mute All, zero emoji clutter) */}
+      <div className="p-3 border-t border-slate-200 bg-white flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          onClick={handleInvite}
+          className="flex-1 h-9.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-800 font-medium text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
+          title="Copy meeting invite link"
+        >
+          <Share2 className="h-3.5 w-3.5 text-sky-600" />
+          <span>Invite</span>
+        </button>
+
+        {isCurrentUserHost && onMuteAll && (
+          <button
+            type="button"
+            onClick={onMuteAll}
+            className="flex-1 h-9.5 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-red-600 border border-transparent hover:border-red-200 text-slate-800 font-medium text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
+            title="Mute all other participants"
+          >
+            <MicOff className="h-3.5 w-3.5 text-red-500" />
+            <span>Mute All</span>
+          </button>
+        )}
       </div>
     </div>
   );
