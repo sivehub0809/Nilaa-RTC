@@ -817,23 +817,18 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
     : [];
 
   return (
-    <div className="relative h-[100dvh] w-screen overflow-hidden flex flex-col select-none touch-manipulation">
-      {/* GPU-composited fixed background with user's atmospheric dark gradient asset */}
-      <div
-        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-center bg-no-repeat transform-gpu will-change-transform"
-        style={{
-          backgroundImage: "url('/meeting-bg.png')",
-          backgroundColor: "#0B1528",
-        }}
-      />
+    <div className="relative h-[100dvh] w-screen overflow-hidden flex flex-col select-none touch-manipulation bg-[#0B0C0E]">
+      {/* Zoom-style neutral deep black workspace background for maximum contrast and zero distraction */}
+      <div className="fixed inset-0 pointer-events-none z-0 bg-[#0B0C0E]" />
+
       {/* Floating Reactions Overlay */}
       <ReactionsOverlay reactions={reactions} />
 
       {/* Join/Leave Presence Notifications */}
       <PresenceToast notifications={presenceNotifications} />
 
-      {/* Top Header Bar - Sleek Dark Frosted Glass */}
-      <header className="h-14 border-b border-white/10 bg-slate-950/50 backdrop-blur-xl px-4 flex items-center justify-between shrink-0 z-20">
+      {/* Top Header Bar - Sleek Zoom Dark Glass */}
+      <header className="h-14 border-b border-white/10 bg-[#0B0C0E]/90 backdrop-blur-xl px-4 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2 group">
             <div className="flex h-7 w-7 items-center justify-center rounded-full overflow-hidden border border-white/20">
@@ -864,18 +859,18 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
 
       {/* Main Area: Video Grid + Side Panels */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Main Video Area: Spotlight Mode OR Balanced Grid Mode */}
-        <main className="flex-1 p-2 sm:p-4 md:p-5 flex flex-col items-center justify-center overflow-hidden relative">
+        {/* Main Video Area: Spotlight Mode OR Balanced Attached Grid Mode (Zoom Gallery Style) */}
+        <main className="flex-1 p-1 sm:p-2 md:p-2.5 flex flex-col items-center justify-center overflow-hidden relative">
           {tracks.length === 0 ? (
-            <div className="relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-2xl overflow-hidden bg-white/70 border border-white/80 backdrop-blur-xl shadow-2xl shadow-sky-950/10 flex flex-col items-center justify-center text-slate-700 p-6">
+            <div className="relative w-full h-full min-h-[200px] max-h-[75vh] aspect-video rounded-xl overflow-hidden bg-[#16181D] border border-white/10 shadow-2xl flex flex-col items-center justify-center text-slate-300 p-6">
               <CalmSpinner size="md" text="Connecting audio & video..." />
             </div>
           ) : isSpotlightActive && spotlightTrack ? (
             /* Spotlight Mode: Compact Filmstrip along top + Expanded Speaker Stage */
-            <div className="w-full h-full flex flex-col gap-2 sm:gap-3 overflow-hidden">
+            <div className="w-full h-full flex flex-col gap-1.5 sm:gap-2 overflow-hidden">
               {/* Top Filmstrip of Other Participants */}
               {otherTracks.length > 0 && (
-                <div className="w-full flex items-center gap-2 sm:gap-3 overflow-x-auto py-1 px-1 shrink-0 scrollbar-thin scrollbar-thumb-white/20">
+                <div className="w-full flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-0.5 px-0.5 shrink-0 scrollbar-thin scrollbar-thumb-white/20">
                   {otherTracks.map((trackRef) => {
                     const tileId = `${trackRef.participant.identity}_${trackRef.source}`;
                     const isSpeaking = speakingIdentities.has(trackRef.participant.identity);
@@ -889,10 +884,10 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                       <div
                         key={tileId}
                         onClick={() => handleTileDoubleAction(tileId)}
-                        className={`relative h-20 sm:h-24 md:h-28 aspect-video rounded-xl overflow-hidden bg-slate-900/90 border cursor-pointer shrink-0 transition-all duration-150 hover:scale-[1.02] active:scale-95 shadow-md ${
+                        className={`relative h-18 sm:h-22 md:h-26 aspect-video rounded-lg sm:rounded-xl overflow-hidden bg-[#16181D] border cursor-pointer shrink-0 transition-all duration-150 hover:scale-[1.02] active:scale-95 shadow-md ${
                           isSpeaking
                             ? "border-sky-400 ring-2 ring-sky-400/40"
-                            : "border-white/20 hover:border-white/40"
+                            : "border-white/10 hover:border-white/25"
                         }`}
                         title={`Click to focus on ${pName}`}
                       >
@@ -904,14 +899,14 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                             }`}
                           />
                         ) : (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 text-white gap-1">
+                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#16181D] text-white gap-1">
                             <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center font-heading text-xs font-bold">
                               {pName.charAt(0).toUpperCase()}
                             </div>
                           </div>
                         )}
                         <div className="absolute bottom-1 left-1.5 right-1.5 flex items-center justify-between pointer-events-none z-10">
-                          <span className="text-[10px] text-white/95 bg-black/60 backdrop-blur-xs px-1.5 py-0.5 rounded-sm truncate max-w-[85px]">
+                          <span className="text-[10px] text-white/95 bg-black/70 backdrop-blur-xs px-1.5 py-0.5 rounded-sm truncate max-w-[85px]">
                             {pName} {isLocal && "(You)"}
                           </span>
                           {trackRef.participant.isMicrophoneEnabled ? (
@@ -943,21 +938,21 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                     key={tileId}
                     onDoubleClick={() => handleTileDoubleAction(tileId)}
                     onTouchEnd={() => handleTileTouchEnd(tileId)}
-                    className={`relative flex-1 w-full h-full min-h-0 rounded-2xl overflow-hidden bg-slate-900/95 shadow-2xl shadow-sky-950/20 flex items-center justify-center transition-all duration-200 group cursor-pointer ${
+                    className={`relative flex-1 w-full h-full min-h-0 rounded-xl overflow-hidden bg-[#16181D] border border-white/10 shadow-2xl flex items-center justify-center transition-all duration-200 group cursor-pointer ${
                       isSpeaking ? "speaker-active-ring" : ""
                     }`}
                     title="Double click or tap to exit spotlight"
                   >
                     {/* Continuous connected line border around rounded corners */}
-                    <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-2xl z-20">
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-xl z-20">
                       <rect
                         x="1.5"
                         y="1.5"
                         style={{ width: "calc(100% - 3px)", height: "calc(100% - 3px)" }}
-                        rx="15"
-                        ry="15"
+                        rx="11"
+                        ry="11"
                         fill="none"
-                        stroke={isSpeaking ? "#0284C7" : "rgba(56, 189, 248, 0.55)"}
+                        stroke={isSpeaking ? "#0284C7" : "rgba(255, 255, 255, 0.08)"}
                         strokeWidth="1.5"
                       />
                       {isSpeaking && (
@@ -965,8 +960,8 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                           x="1.5"
                           y="1.5"
                           style={{ width: "calc(100% - 3px)", height: "calc(100% - 3px)" }}
-                          rx="15"
-                          ry="15"
+                          rx="11"
+                          ry="11"
                           fill="none"
                           stroke="#38BDF8"
                           strokeWidth="2.5"
@@ -983,7 +978,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                         e.stopPropagation();
                         setSpotlightTileId(null);
                       }}
-                      className="absolute top-3 left-3 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/25 text-white text-xs font-medium transition-all active:scale-95 shadow-md cursor-pointer"
+                      className="absolute top-3 left-3 z-30 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/70 hover:bg-black/90 backdrop-blur-md border border-white/20 text-white text-xs font-medium transition-all active:scale-95 shadow-md cursor-pointer"
                       title="Return to balanced grid"
                     >
                       <LayoutGrid className="h-3.5 w-3.5 text-sky-400" />
@@ -1001,16 +996,16 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                         } transition-all duration-200`}
                       />
                     ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/85 backdrop-blur-md gap-3">
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#16181D] backdrop-blur-md gap-3">
                         <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-heading text-2xl sm:text-3xl font-bold shadow-lg">
                           {pName.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-sm text-sky-100/70 font-light">Camera Off</span>
+                        <span className="text-sm text-white/50 font-light">Camera Off</span>
                       </div>
                     )}
 
                     {/* Participant Name & Status Pill */}
-                    <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 text-xs z-10 text-white">
+                    <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15 text-xs z-10 text-white">
                       <span className="font-medium text-white truncate max-w-[140px]">
                         {pName} {isLocal && "(You)"}
                       </span>
@@ -1049,7 +1044,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                               e.stopPropagation();
                               handleFlipCamera();
                             }}
-                            className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                            className="h-7 w-7 rounded-btn bg-black/50 hover:bg-black/70 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
                             title="Flip camera front/back"
                           >
                             <SwitchCamera className="h-3.5 w-3.5 text-accent" />
@@ -1060,7 +1055,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                               e.stopPropagation();
                               toggleLocalMirror();
                             }}
-                            className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                            className="h-7 w-7 rounded-btn bg-black/50 hover:bg-black/70 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
                             title={isLocalMirrored ? "Disable mirror view" : "Enable mirror view"}
                           >
                             <FlipHorizontal className={`h-3.5 w-3.5 ${isLocalMirrored ? "text-accent" : ""}`} />
@@ -1075,7 +1070,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                             e.stopPropagation();
                             toggleFitMode(tileId);
                           }}
-                          className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                          className="h-7 w-7 rounded-btn bg-black/50 hover:bg-black/70 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
                           title={currentFit === "contain" ? "Crop to fill box" : "Fit whole video in box"}
                         >
                           {currentFit === "contain" ? (
@@ -1091,11 +1086,11 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
               })()}
             </div>
           ) : (
-            /* Regular Grid View */
+            /* Regular Grid View - Snug Attached Video Gallery (Zoom Style) */
             <div
               className={`grid ${getGridClasses(
                 tracks.length || 1
-              )} gap-3 sm:gap-4 w-full h-full max-h-[85vh] items-center justify-center overflow-y-auto`}
+              )} gap-1 sm:gap-1.5 md:gap-2 w-full h-full max-h-[calc(100vh-140px)] items-center justify-center overflow-y-auto`}
             >
               {tracks.map((trackRef) => {
                 const isSpeaking = speakingIdentities.has(trackRef.participant.identity);
@@ -1112,21 +1107,21 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                     key={tileId}
                     onDoubleClick={() => handleTileDoubleAction(tileId)}
                     onTouchEnd={() => handleTileTouchEnd(tileId)}
-                    className={`relative w-full h-full min-h-[220px] max-h-[75vh] aspect-video rounded-2xl overflow-hidden bg-slate-900/90 shadow-2xl shadow-sky-950/20 flex items-center justify-center transition-all duration-200 group cursor-pointer ${
+                    className={`relative w-full h-full min-h-[140px] sm:min-h-[180px] md:min-h-[220px] max-h-[85vh] aspect-video rounded-xl overflow-hidden bg-[#16181D] border border-white/10 shadow-lg flex items-center justify-center transition-all duration-150 group cursor-pointer ${
                       isSpeaking ? "speaker-active-ring" : ""
                     }`}
                     title="Double click or tap to spotlight speaker"
                   >
                     {/* Continuous connected line border around rounded corners */}
-                    <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-2xl z-20">
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-xl z-20">
                       <rect
                         x="1.5"
                         y="1.5"
                         style={{ width: "calc(100% - 3px)", height: "calc(100% - 3px)" }}
-                        rx="15"
-                        ry="15"
+                        rx="11"
+                        ry="11"
                         fill="none"
-                        stroke={isSpeaking ? "#0284C7" : "rgba(56, 189, 248, 0.55)"}
+                        stroke={isSpeaking ? "#0284C7" : "rgba(255, 255, 255, 0.08)"}
                         strokeWidth="1.5"
                       />
                       {isSpeaking && (
@@ -1134,8 +1129,8 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                           x="1.5"
                           y="1.5"
                           style={{ width: "calc(100% - 3px)", height: "calc(100% - 3px)" }}
-                          rx="15"
-                          ry="15"
+                          rx="11"
+                          ry="11"
                           fill="none"
                           stroke="#38BDF8"
                           strokeWidth="2.5"
@@ -1156,16 +1151,16 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                         } transition-all duration-200`}
                       />
                     ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/85 backdrop-blur-md gap-2">
-                        <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-heading text-xl sm:text-2xl font-bold shadow-lg">
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#16181D] backdrop-blur-md gap-2">
+                        <div className="h-14 w-14 sm:h-18 sm:w-18 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-heading text-lg sm:text-2xl font-bold shadow-lg">
                           {pName.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-xs text-sky-100/70 font-light">Camera Off</span>
+                        <span className="text-xs text-white/50 font-light">Camera Off</span>
                       </div>
                     )}
 
                     {/* Participant Name & Status Pill */}
-                    <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 text-xs z-10 text-white">
+                    <div className="absolute bottom-2.5 left-2.5 flex items-center gap-2 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15 text-xs z-10 text-white">
                       <span className="font-medium text-white truncate max-w-[120px]">
                         {pName} {isLocal && "(You)"}
                       </span>
@@ -1180,7 +1175,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                     </div>
 
                     {/* Top Right: Speaking Badge & Fit Toggle */}
-                    <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-10">
                       {isSpeaking && (
                         <div
                           className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border"
@@ -1204,7 +1199,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                               e.stopPropagation();
                               handleFlipCamera();
                             }}
-                            className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                            className="h-7 w-7 rounded-btn bg-black/50 hover:bg-black/70 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
                             title="Flip camera front/back"
                             aria-label="Flip camera front or back"
                           >
@@ -1216,7 +1211,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                               e.stopPropagation();
                               toggleLocalMirror();
                             }}
-                            className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                            className="h-7 w-7 rounded-btn bg-black/50 hover:bg-black/70 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
                             title={isLocalMirrored ? "Disable mirror view" : "Enable mirror view"}
                             aria-label="Toggle camera mirror view"
                           >
@@ -1232,7 +1227,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                             e.stopPropagation();
                             toggleFitMode(tileId);
                           }}
-                          className="h-7 w-7 rounded-btn bg-card/85 hover:bg-card border border-border/80 text-muted-foreground hover:text-foreground flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
+                          className="h-7 w-7 rounded-btn bg-black/50 hover:bg-black/70 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center backdrop-blur-md transition-all shadow-sm active:scale-95"
                           title={
                             currentFit === "contain"
                               ? "Crop to fill box"
@@ -1297,7 +1292,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
       </div>
 
       {/* Bottom Controls Bar - Zoom Style Reorganized Layout (Touchable on Desktop & Mobile) */}
-      <footer className="h-20 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-white/10 bg-slate-950/60 backdrop-blur-xl px-2 sm:px-4 md:px-6 flex items-center justify-between shrink-0 z-20">
+      <footer className="h-20 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-white/10 bg-[#0B0C0E]/90 backdrop-blur-xl px-2 sm:px-4 md:px-6 flex items-center justify-between shrink-0 z-20">
         {/* Left Section: Mic & Camera Buttons */}
         <div className="flex items-center gap-1.5 sm:gap-2.5">
           {/* Mic Button */}
