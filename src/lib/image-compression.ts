@@ -94,11 +94,12 @@ export async function cropAvatarToBlob(
       ctx.clip();
 
       const minDim = Math.min(img.width, img.height);
-      const drawSize = minDim * cropZoom;
-      const sx = (img.width - drawSize) / 2;
-      const sy = (img.height - drawSize) / 2;
+      const safeZoom = Math.max(cropZoom, 1);
+      const cropSize = minDim / safeZoom;
+      const sx = (img.width - cropSize) / 2;
+      const sy = (img.height - cropSize) / 2;
 
-      ctx.drawImage(img, sx, sy, drawSize, drawSize, 0, 0, size, size);
+      ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, size, size);
 
       // Export as WebP blob (falls back gracefully to standard image in browser)
       canvas.toBlob(

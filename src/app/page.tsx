@@ -80,8 +80,19 @@ export default function LandingPage() {
       }
     });
 
+    const handleProfileUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setProfile((prev: any) => ({ ...prev, ...customEvent.detail }));
+      } else {
+        fetchUserSettings().then(setProfile).catch(() => {});
+      }
+    };
+    window.addEventListener("nilaa_profile_updated", handleProfileUpdated);
+
     return () => {
       subscription.unsubscribe();
+      window.removeEventListener("nilaa_profile_updated", handleProfileUpdated);
     };
   }, []);
 

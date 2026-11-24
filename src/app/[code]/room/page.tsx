@@ -58,6 +58,7 @@ import { normalizeMeetingCode } from "@/lib/utils";
 import { CalmSpinner } from "@/components/ui/calm-spinner";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { getCachedUserSettings } from "@/lib/user-settings";
 
 interface RoomPageProps {
   params: Promise<{
@@ -807,16 +808,21 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
   const participantListItems: ParticipantItem[] = useMemo(() => {
     return participants.map((p) => {
       let isHost = false;
+      let avatarUrl: string | undefined = undefined;
       try {
         const meta = p.metadata ? JSON.parse(p.metadata) : {};
         isHost = !!meta.isHost;
+        avatarUrl = meta.avatarUrl || undefined;
       } catch {}
-      if (p.isLocal && isCurrentUserHost) {
-        isHost = true;
+      if (p.isLocal) {
+        if (isCurrentUserHost) isHost = true;
+        const localCachedAvatar = getCachedUserSettings().avatarUrl;
+        if (localCachedAvatar) avatarUrl = localCachedAvatar;
       }
       return {
         id: p.identity,
         name: p.name || p.identity,
+        avatarUrl,
         isHost,
         isGuest: !p.name,
         isSelf: p.isLocal,
@@ -967,6 +973,15 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                 const isLocal = trackRef.participant.isLocal;
                 const handRaised = !!raisedHandParticipants[trackRef.participant.identity];
                 const pName = trackRef.participant.name || trackRef.participant.identity;
+                let pAvatar: string | null = null;
+                try {
+                  const pMeta = trackRef.participant.metadata ? JSON.parse(trackRef.participant.metadata) : {};
+                  pAvatar = pMeta.avatarUrl || null;
+                } catch {}
+                if (isLocal) {
+                  const localAvatar = getCachedUserSettings().avatarUrl;
+                  if (localAvatar) pAvatar = localAvatar;
+                }
                 const hasVideo = trackRef.publication && !trackRef.publication.isMuted;
                 const isScreenShare = trackRef.source === Track.Source.ScreenShare;
                 const currentFit = isScreenShare ? "contain" : (fitModes[tileId] || "contain");
@@ -1035,9 +1050,15 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                       />
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#16181D] backdrop-blur-md gap-3">
-                        <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-heading text-2xl sm:text-3xl font-bold shadow-lg">
-                          {pName.charAt(0).toUpperCase()}
-                        </div>
+                        {pAvatar ? (
+                          <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full overflow-hidden border border-white/20 shadow-lg">
+                            <img src={pAvatar} alt={pName} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-heading text-2xl sm:text-3xl font-bold shadow-lg">
+                            {pName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <span className="text-sm text-white/50 font-light">Camera Off</span>
                       </div>
                     )}
@@ -1135,6 +1156,15 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                 const isLocal = trackRef.participant.isLocal;
                 const handRaised = !!raisedHandParticipants[trackRef.participant.identity];
                 const pName = trackRef.participant.name || trackRef.participant.identity;
+                let pAvatar: string | null = null;
+                try {
+                  const pMeta = trackRef.participant.metadata ? JSON.parse(trackRef.participant.metadata) : {};
+                  pAvatar = pMeta.avatarUrl || null;
+                } catch {}
+                if (isLocal) {
+                  const localAvatar = getCachedUserSettings().avatarUrl;
+                  if (localAvatar) pAvatar = localAvatar;
+                }
                 const hasVideo = trackRef.publication && !trackRef.publication.isMuted;
                 const tileId = `${trackRef.participant.identity}_${trackRef.source}`;
                 const isScreenShare = trackRef.source === Track.Source.ScreenShare;
@@ -1190,9 +1220,15 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                       />
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#16181D] backdrop-blur-md gap-2">
-                        <div className="h-14 w-14 sm:h-18 sm:w-18 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-heading text-lg sm:text-2xl font-bold shadow-lg">
-                          {pName.charAt(0).toUpperCase()}
-                        </div>
+                        {pAvatar ? (
+                          <div className="h-14 w-14 sm:h-18 sm:w-18 rounded-full overflow-hidden border border-white/20 shadow-lg">
+                            <img src={pAvatar} alt={pName} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="h-14 w-14 sm:h-18 sm:w-18 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-heading text-lg sm:text-2xl font-bold shadow-lg">
+                            {pName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <span className="text-xs text-white/50 font-light">Camera Off</span>
                       </div>
                     )}

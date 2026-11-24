@@ -121,13 +121,20 @@ export async function POST(req: NextRequest) {
     }
 
     // 7. Update public.profiles table (Primary persistent source of truth)
+    const displayName = (formData.get("displayName") as string) || undefined;
+    const role = (formData.get("role") as string) || undefined;
+
     try {
-      await supabaseAdmin.from("profiles").upsert({
+      const profilePayload: Record<string, any> = {
         id: user.id,
         email: user.email || "",
         avatar_url: finalAvatarUrl,
         updated_at: new Date().toISOString(),
-      });
+      };
+      if (displayName) profilePayload.display_name = displayName;
+      if (role) profilePayload.role = role;
+
+      await supabaseAdmin.from("profiles").upsert(profilePayload);
     } catch (profErr) {
       console.warn("Profiles table update error:", profErr);
     }
@@ -135,11 +142,15 @@ export async function POST(req: NextRequest) {
     // 8. Update Supabase auth user_metadata if it's a short URL
     if (finalAvatarUrl.startsWith("http")) {
       try {
+        const metadataPayload: Record<string, any> = {
+          ...user.user_metadata,
+          avatar_url: finalAvatarUrl,
+        };
+        if (displayName) metadataPayload.display_name = displayName;
+        if (role) metadataPayload.role = role;
+
         await supabaseAdmin.auth.admin.updateUserById(user.id, {
-          user_metadata: {
-            ...user.user_metadata,
-            avatar_url: finalAvatarUrl,
-          },
+          user_metadata: metadataPayload,
         });
       } catch {}
     }

@@ -61,6 +61,19 @@ export default function HomePage() {
   };
 
   useEffect(() => {
+    const handleProfileUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setUserProfile((prev) => ({ ...prev, ...customEvent.detail }));
+      } else {
+        refreshProfile();
+      }
+    };
+    window.addEventListener("nilaa_profile_updated", handleProfileUpdated);
+    return () => window.removeEventListener("nilaa_profile_updated", handleProfileUpdated);
+  }, []);
+
+  useEffect(() => {
     const supabase = createClient();
 
     // 1. Restore session across browser close / cookie wipe

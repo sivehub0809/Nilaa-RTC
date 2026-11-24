@@ -18,6 +18,7 @@ import {
   Sliders,
   Check,
   Mail,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,6 +103,11 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
         cancelAnimationFrame(animFrameRef.current);
         animFrameRef.current = null;
       }
+      // Reset crop subview state so it can never be orphaned
+      setCropModalOpen(false);
+      setRawImageSrc(null);
+      setCropZoom(1);
+      setUploadingAvatar(false);
     }
   }, [isOpen]);
 
@@ -282,6 +288,14 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
     }
   };
 
+  // Cancel crop subview
+  const handleCancelCrop = () => {
+    setCropModalOpen(false);
+    setRawImageSrc(null);
+    setCropZoom(1);
+    setUploadingAvatar(false);
+  };
+
   // Ultra-optimized circular crop (WebP 192x192, ~8KB to 15KB) + Cloud Storage Upload
   const handleSaveCrop = async () => {
     if (!rawImageSrc) return;
@@ -294,6 +308,8 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
       // 2. Upload to Supabase Storage via our secure API route with auth token
       const formData = new FormData();
       formData.append("file", blob, "avatar.webp");
+      if (settings.displayName) formData.append("displayName", settings.displayName);
+      if (settings.role) formData.append("role", settings.role);
 
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
@@ -308,39 +324,43 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
         body: formData,
       });
 
-      if (!res.ok) {
-        // Fallback: convert compact blob to data URL so photo is always saved even if storage bucket is offline
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const fallbackDataUrl = reader.result as string;
-          setSettings((prev) => ({ ...prev, avatarUrl: fallbackDataUrl }));
-          await saveUserSettings({ avatarUrl: fallbackDataUrl });
-          onProfileUpdated?.();
-          setUploadingAvatar(false);
-          setCropModalOpen(false);
-          setRawImageSrc(null);
-          toast.success("Profile photo updated & saved!");
-        };
-        reader.readAsDataURL(blob);
-        return;
+      let cloudAvatarUrl: string | null = null;
+      if (res.ok) {
+        const data = await res.json();
+        cloudAvatarUrl = data.avatarUrl;
       }
-
-      const data = await res.json();
-      const cloudAvatarUrl = data.avatarUrl;
 
       if (!cloudAvatarUrl) {
-        throw new Error("No avatar URL returned from server");
+        // Fallback: convert compact blob to data URL so photo is always saved even if storage bucket is offline
+        const fallbackDataUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+        cloudAvatarUrl = fallbackDataUrl;
       }
 
-      // 3. Immediately save and broadcast update so user doesn't have to click another save button
-      setSettings((prev) => ({ ...prev, avatarUrl: cloudAvatarUrl }));
-      await saveUserSettings({ avatarUrl: cloudAvatarUrl });
+      // 3. Immediately save and broadcast update with current settings intact
+      const updatedSettings: UserSettings = {
+        ...settings,
+        avatarUrl: cloudAvatarUrl,
+      };
+
+      setSettings(updatedSettings);
+      await saveUserSettings(updatedSettings);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("nilaa_profile_updated", { detail: updatedSettings })
+        );
+      }
       onProfileUpdated?.();
 
       setUploadingAvatar(false);
       setCropModalOpen(false);
       setRawImageSrc(null);
-      toast.success("Profile photo updated & saved!");
+      setCropZoom(1);
+      toast.success("Profile photo updated!");
     } catch (err: any) {
       console.error("Avatar upload error:", err);
       // Fallback to local storage persistence
@@ -349,13 +369,23 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
         const reader = new FileReader();
         reader.onloadend = async () => {
           const fallbackDataUrl = reader.result as string;
-          setSettings((prev) => ({ ...prev, avatarUrl: fallbackDataUrl }));
-          await saveUserSettings({ avatarUrl: fallbackDataUrl });
+          const updatedSettings: UserSettings = {
+            ...settings,
+            avatarUrl: fallbackDataUrl,
+          };
+          setSettings(updatedSettings);
+          await saveUserSettings(updatedSettings);
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("nilaa_profile_updated", { detail: updatedSettings })
+            );
+          }
           onProfileUpdated?.();
           setUploadingAvatar(false);
           setCropModalOpen(false);
           setRawImageSrc(null);
-          toast.success("Profile photo updated & saved!");
+          setCropZoom(1);
+          toast.success("Profile photo updated!");
         };
         reader.readAsDataURL(blob);
       } catch (fallbackErr) {
@@ -370,11 +400,16 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
     setSaving(true);
     try {
       const latestCached = getCachedUserSettings();
-      const merged = {
+      const merged: UserSettings = {
         ...settings,
         avatarUrl: settings.avatarUrl || latestCached.avatarUrl,
       };
       await saveUserSettings(merged);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("nilaa_profile_updated", { detail: merged })
+        );
+      }
       onProfileUpdated?.();
       toast.success("Settings saved!");
       onClose();
@@ -404,91 +439,102 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 280 }}
-            className="fixed top-0 right-0 bottom-0 z-50 w-full sm:w-[440px] bg-white border-l border-slate-200 shadow-2xl flex flex-col justify-between overflow-y-auto"
+            className="fixed top-0 right-0 bottom-0 z-50 w-full sm:w-[440px] bg-white border-l border-slate-200 shadow-2xl flex flex-col justify-between overflow-hidden"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-white sticky top-0 z-10">
-              <div className="flex items-center gap-2">
-                <Sliders className="h-5 w-5 text-blue-600" />
-                <h2 className="font-heading text-lg font-bold text-slate-900">
-                  Settings & Green Room
-                </h2>
+            {/* Main Content View */}
+            <div className="flex-1 flex flex-col justify-between overflow-y-auto">
+              {/* Header */}
+              <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-white sticky top-0 z-10">
+                <div className="flex items-center gap-2">
+                  <Sliders className="h-5 w-5 text-sky-600" />
+                  <h2 className="font-heading text-lg font-bold text-slate-900">
+                    Settings & Green Room
+                  </h2>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="h-9 w-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <button
-                onClick={onClose}
-                className="h-9 w-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
 
-            {/* Scrollable Content */}
-            <div className="p-5 space-y-6 flex-1">
-              {/* Profile Card */}
-              <div className="space-y-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Your Profile
-                </span>
+              {/* Scrollable Content */}
+              <div className="p-5 space-y-6 flex-1">
+                {/* Profile Card */}
+                <div className="space-y-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Your Profile
+                  </span>
 
-                <div className="flex items-center gap-4">
-                  <div className="relative group shrink-0">
-                    <div className="h-16 w-16 rounded-full overflow-hidden bg-white border-2 border-blue-400 flex items-center justify-center text-lg font-bold shadow-sm">
-                      {settings.avatarUrl ? (
-                        <img src={settings.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-blue-600">
-                          {(settings.displayName || "U").charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-[10px] font-semibold"
-                    >
-                      <Crop className="h-4 w-4 mb-0.5" />
-                      <span>Change</span>
-                    </button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-                  </div>
-
-                  <div className="flex-1 space-y-2">
-                    <div>
-                      <label className="text-[11px] font-semibold text-slate-700">Display Name</label>
-                      <Input
-                        type="text"
-                        placeholder="Your name"
-                        value={settings.displayName}
-                        onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
-                        className="h-9 text-xs bg-white border-slate-200"
+                  <div className="flex items-center gap-4">
+                    <div className="relative group shrink-0">
+                      <div className="h-16 w-16 rounded-full overflow-hidden bg-white border-2 border-sky-400 flex items-center justify-center text-lg font-bold shadow-sm">
+                        {settings.avatarUrl ? (
+                          <img src={settings.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-sky-600">
+                            {(settings.displayName || "U").charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-[10px] font-semibold cursor-pointer"
+                      >
+                        <Crop className="h-4 w-4 mb-0.5" />
+                        <span>Change</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-sky-600 hover:bg-sky-700 text-white flex items-center justify-center shadow-md border-2 border-white cursor-pointer"
+                        title="Change profile photo"
+                      >
+                        <Crop className="h-3 w-3" />
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
                       />
-                      {userEmail && (
-                        <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500 font-normal">
-                          <Mail className="h-3 w-3 text-slate-400 shrink-0" />
-                          <span className="truncate">{userEmail}</span>
-                        </div>
-                      )}
                     </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-slate-700">Role Label</label>
-                      <Input
-                        type="text"
-                        placeholder="e.g. Product Designer"
-                        value={settings.role}
-                        onChange={(e) => setSettings({ ...settings, role: e.target.value })}
-                        className="h-9 text-xs bg-white border-slate-200"
-                      />
+
+                    <div className="flex-1 space-y-2">
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-700">Display Name</label>
+                        <Input
+                          type="text"
+                          placeholder="Your name"
+                          value={settings.displayName}
+                          onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
+                          className="h-9 text-xs bg-white border-slate-200"
+                        />
+                        {userEmail && (
+                          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500 font-normal">
+                            <Mail className="h-3 w-3 text-slate-400 shrink-0" />
+                            <span className="truncate">{userEmail}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-700">Role Label</label>
+                        <Input
+                          type="text"
+                          placeholder="e.g. Product Designer"
+                          value={settings.role}
+                          onChange={(e) => setSettings({ ...settings, role: e.target.value })}
+                          className="h-9 text-xs bg-white border-slate-200"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Video Green Room Check */}
+                {/* Video Green Room Check */}
               <div className="space-y-3 p-4 rounded-2xl bg-slate-50 border border-slate-200">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -638,60 +684,129 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
 
             {/* Footer Action */}
             <div className="p-5 border-t border-slate-100 bg-white sticky bottom-0 z-10 flex gap-3">
-              <Button variant="ghost" onClick={onClose} className="flex-1 text-xs">
+              <Button variant="ghost" onClick={onClose} className="flex-1 text-xs cursor-pointer">
                 Cancel
               </Button>
               <Button
                 variant="accent"
                 onClick={handleSave}
                 disabled={saving}
-                className="flex-1 text-xs font-semibold"
+                className="flex-1 text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white cursor-pointer"
               >
                 {saving ? "Saving..." : "Save Settings"}
               </Button>
             </div>
-          </motion.div>
-        </>
-      )}
-
-      {/* Avatar Crop Modal */}
-      {cropModalOpen && rawImageSrc && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 max-w-xs w-full space-y-4 shadow-2xl">
-            <h3 className="font-heading font-bold text-sm text-slate-900">Crop Profile Photo</h3>
-            <div className="relative h-48 w-48 mx-auto rounded-full overflow-hidden border-2 border-blue-500 bg-slate-100 flex items-center justify-center">
-              <img
-                src={rawImageSrc}
-                alt="Crop"
-                className="max-h-none pointer-events-none select-none transition-transform"
-                style={{ transform: `scale(${cropZoom})` }}
-              />
-            </div>
-            <div className="space-y-1">
-              <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                <ZoomIn className="h-3 w-3" /> Zoom
-              </span>
-              <input
-                type="range"
-                min="0.8"
-                max="2.5"
-                step="0.05"
-                value={cropZoom}
-                onChange={(e) => setCropZoom(parseFloat(e.target.value))}
-                className="w-full accent-blue-600 cursor-pointer"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setCropModalOpen(false)} disabled={uploadingAvatar} className="flex-1 text-xs">
-                Cancel
-              </Button>
-              <Button variant="accent" size="sm" onClick={handleSaveCrop} disabled={uploadingAvatar} className="flex-1 text-xs font-semibold">
-                {uploadingAvatar ? "Saving..." : "Apply & Save Photo"}
-              </Button>
-            </div>
           </div>
-        </div>
-      )}
-    </AnimatePresence>
-  );
+
+          {/* Seamless In-Drawer Crop Subview Overlay */}
+          <AnimatePresence>
+            {cropModalOpen && rawImageSrc && (
+              <motion.div
+                key="crop-subview"
+                initial={{ opacity: 0, x: 28 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 28 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className="absolute inset-0 z-30 bg-white flex flex-col justify-between"
+              >
+                {/* Subview Header */}
+                <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-white">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCancelCrop}
+                      className="h-8 w-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+                      title="Back to settings"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </button>
+                    <h2 className="font-heading text-lg font-bold text-slate-900">
+                      Adjust Profile Photo
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCancelCrop}
+                    className="h-9 w-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                {/* Subview Body: Centered Crop Circle & Zoom */}
+                <div className="p-6 flex-1 flex flex-col items-center justify-center space-y-6 overflow-y-auto">
+                  {/* Circular Frame */}
+                  <div className="relative h-48 w-48 sm:h-52 sm:w-52 rounded-full overflow-hidden border-2 border-sky-500 bg-slate-900 shadow-xl flex items-center justify-center ring-4 ring-sky-100 shrink-0">
+                    <img
+                      src={rawImageSrc}
+                      alt="Crop preview"
+                      className="w-full h-full object-cover pointer-events-none select-none transition-transform duration-75"
+                      style={{
+                        transform: `scale(${cropZoom})`,
+                        transformOrigin: "center center",
+                      }}
+                    />
+                  </div>
+
+                  {/* Zoom Slider */}
+                  <div className="w-full max-w-xs space-y-2">
+                    <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
+                      <span className="flex items-center gap-1.5">
+                        <ZoomIn className="h-3.5 w-3.5 text-sky-600" />
+                        <span>Zoom</span>
+                      </span>
+                      <span className="font-mono text-[11px] text-slate-500">
+                        {Math.round(cropZoom * 100)}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="3"
+                      step="0.05"
+                      value={cropZoom}
+                      onChange={(e) => setCropZoom(parseFloat(e.target.value))}
+                      className="w-full accent-sky-600 cursor-pointer h-2 bg-slate-200 rounded-lg"
+                    />
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 text-center max-w-xs leading-relaxed">
+                    Adjust zoom to frame your photo nicely inside the circle.
+                  </p>
+                </div>
+
+                {/* Subview Footer Actions */}
+                <div className="p-5 border-t border-slate-100 bg-white flex gap-3">
+                  <Button
+                    variant="ghost"
+                    onClick={handleCancelCrop}
+                    disabled={uploadingAvatar}
+                    className="flex-1 text-xs cursor-pointer"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="accent"
+                    onClick={handleSaveCrop}
+                    disabled={uploadingAvatar}
+                    className="flex-1 text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white cursor-pointer"
+                  >
+                    {uploadingAvatar ? (
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                        <span>Saving...</span>
+                      </div>
+                    ) : (
+                      "Set Profile Photo"
+                    )}
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </>
+    )}
+  </AnimatePresence>
+);
 }
