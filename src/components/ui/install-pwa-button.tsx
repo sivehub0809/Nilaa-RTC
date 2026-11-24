@@ -25,25 +25,6 @@ function WindowsIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
   );
 }
 
-/**
- * Direct download for Windows / Desktop app launcher (.url Internet Shortcut)
- * Downloads instantly to the user's computer with zero instructions/modals
- */
-function triggerWindowsDownload() {
-  if (typeof window === "undefined") return;
-  const origin = window.location.origin;
-  const shortcut = `[InternetShortcut]\r\nURL=${origin}/home?source=pwa\r\nIconIndex=0\r\nIconFile=${origin}/favicon.ico\r\n`;
-  const blob = new Blob([shortcut], { type: "application/x-mswinurl;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "Nilaa RTC.url";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 export function InstallPwaButton({ className = "", variant = "primary" }: InstallPwaButtonProps) {
   const { isInstalled, platform, promptInstall, markAsInstalled } = usePwaInstall();
 
@@ -60,24 +41,19 @@ export function InstallPwaButton({ className = "", variant = "primary" }: Instal
     const result = await promptInstall();
     if (result === "accepted") {
       markAsInstalled();
-      toast.success("Nilaa RTC installed! Launch it anytime from your Windows Taskbar.");
+      toast.success("Nilaa RTC installed! Launch it anytime from your Windows Taskbar or Start Menu.");
       return;
     }
 
-    // 2. Direct download without any instruction modal
-    if (platform === "windows" || platform === "mac" || platform === "other") {
-      triggerWindowsDownload();
-      markAsInstalled();
-      toast.success("Downloading Nilaa RTC desktop app...");
+    if (result === "dismissed") {
       return;
     }
 
-    // 3. Mobile quick toast notification
-    if (platform === "ios") {
-      toast.info("In Safari, tap Share and select 'Add to Home Screen'.");
-    } else if (platform === "android") {
-      toast.info("In Chrome, tap menu (⋮) and select 'Install app'.");
-    }
+    // 2. If prompt is unavailable (e.g. already installed in browser or shields active)
+    toast.info(
+      "Nilaa RTC installs right through your browser! Look for the Install icon (⊕) on the right side of your address bar, or search 'Nilaa RTC' in Windows Start if already installed.",
+      { duration: 6000 }
+    );
   };
 
   // Dynamic button label & icon based on user's device
@@ -119,7 +95,7 @@ export function InstallPwaButton({ className = "", variant = "primary" }: Instal
         type="button"
         onClick={handleInstallClick}
         className={`relative h-9 px-4 rounded-full backdrop-blur-xl bg-white/20 hover:bg-white/35 text-blue-600 hover:text-blue-700 font-sans font-medium text-xs sm:text-[13px] tracking-tight shadow-sm shadow-sky-950/5 border border-white/60 hover:border-white/90 flex items-center gap-2 active:scale-95 transition-all duration-200 cursor-pointer overflow-hidden ${className}`}
-        title="Download Nilaa RTC Desktop App"
+        title="Install Nilaa RTC as Desktop App"
       >
         {/* Liquid Glass Specular Top Highlight */}
         <span className="pointer-events-none absolute inset-x-2 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent" />
@@ -138,7 +114,7 @@ export function InstallPwaButton({ className = "", variant = "primary" }: Instal
         type="button"
         onClick={handleInstallClick}
         className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full backdrop-blur-xl bg-white/30 hover:bg-white/50 text-blue-600 border border-white/60 hover:border-white/90 font-sans text-xs font-medium shadow-xs transition-all cursor-pointer ${className}`}
-        title="Download Nilaa RTC Desktop App"
+        title="Install Nilaa RTC as Desktop App"
       >
         <span className="flex items-center justify-center p-0.5 rounded-xs bg-white/40">
           {icon}

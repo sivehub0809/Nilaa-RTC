@@ -17,27 +17,35 @@ function notifyListeners() {
 }
 
 if (typeof window !== "undefined") {
+  // Check if prompt was already captured by early head script
+  if ((window as any).__nilaa_deferred_prompt) {
+    globalDeferredPrompt = (window as any).__nilaa_deferred_prompt;
+  }
+
   // 1. Listen for Chrome/Edge/Brave/Android native install prompt
   window.addEventListener("beforeinstallprompt", (e: Event) => {
     e.preventDefault();
     globalDeferredPrompt = e as BeforeInstallPromptEvent;
+    (window as any).__nilaa_deferred_prompt = e;
     notifyListeners();
   });
 
   // 2. Track when app has been installed
   window.addEventListener("appinstalled", () => {
     globalDeferredPrompt = null;
-    try {
-      localStorage.setItem("nilaa_app_installed", "true");
-    } catch {}
+    if (typeof window !== "undefined") {
+      (window as any).__nilaa_deferred_prompt = null;
+      try {
+        localStorage.setItem("nilaa_app_installed", "true");
+        localStorage.setItem("nilaa_hide_install_banner", "true");
+      } catch {}
+    }
     notifyListeners();
   });
 
-  // 3. Register service worker
+  // 3. Register service worker immediately
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
-    });
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
   }
 }
 
@@ -56,13 +64,11 @@ export function detectPlatform(): PlatformType {
   return "other";
 }
 
+/**
+ * Checks whether the current window is running inside the installed standalone PWA app window
+ */
 export function isStandaloneApp(): boolean {
   if (typeof window === "undefined") return false;
-  try {
-    if (localStorage.getItem("nilaa_app_installed") === "true") {
-      return true;
-    }
-  } catch {}
 
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
@@ -83,7 +89,8 @@ export function markAsInstalled() {
 }
 
 export function usePwaInstall() {
-  const [canPrompt, setCanPrompt] = useState(Boolean(globalDeferredPrompt));
+  const getPrompt = () => globalDeferredPrompt || (typeof window !== "undefined" ? (window as any).__nilaa_deferred_prompt : null);
+  const [canPrompt, setCanPrompt] = useState(Boolean(getPrompt()));
   const [isInstalled, setIsInstalled] = useState(() => {
     if (typeof window !== "undefined") {
       return isStandaloneApp();
@@ -95,10 +102,10 @@ export function usePwaInstall() {
   useEffect(() => {
     setPlatform(detectPlatform());
     setIsInstalled(isStandaloneApp());
-    setCanPrompt(Boolean(globalDeferredPrompt));
+    setCanPrompt(Boolean(getPrompt()));
 
     const handler = () => {
-      setCanPrompt(Boolean(globalDeferredPrompt));
+      setCanPrompt(Boolean(getPrompt()));
       setIsInstalled(isStandaloneApp());
     };
 
@@ -108,24 +115,27 @@ export function usePwaInstall() {
     };
   }, []);
 
-  const promptInstall = async (): Promise<"accepted" | "dismissed" | "manual"> => {
-    if (globalDeferredPrompt) {
+  const promptInstall = async (): Promise<"accepted" | "dismissed" | "unavailable"> => {
+    const promptEvent = getPrompt();
+    if (promptEvent) {
       try {
-        await globalDeferredPrompt.prompt();
-        const choice = await globalDeferredPrompt.userChoice;
+        await promptEvent.prompt();
+        const choice = await promptEvent.userChoice;
         if (choice.outcome === "accepted") {
           globalDeferredPrompt = null;
+          if (typeof window !== "undefined") {
+            (window as any).__nilaa_deferred_prompt = null;
+          }
           markAsInstalled();
           setCanPrompt(false);
-          setIsInstalled(true);
           return "accepted";
         }
         return "dismissed";
       } catch {
-        return "manual";
+        return "unavailable";
       }
     }
-    return "manual";
+    return "unavailable";
   };
 
   return {
