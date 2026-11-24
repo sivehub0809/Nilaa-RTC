@@ -104,9 +104,9 @@ export default function LandingPage() {
 
   return (
     <div className="relative min-h-[100dvh] flex flex-col selection:bg-sky-200 selection:text-sky-900 overflow-x-hidden">
-      {/* Ambient Sky Background (GPU-composited with zero mobile lag, always visible) */}
+      {/* Ambient Sky Background (GPU-composited: full vertical coverage on desktop, natural cover on mobile) */}
       <div
-        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-top bg-no-repeat transform-gpu will-change-transform"
+        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-top md:bg-[length:100%_100%] md:bg-center bg-no-repeat transform-gpu will-change-transform"
         style={{
           backgroundImage: "url('/background.jpg')",
           backgroundColor: "#BAE6FD",

@@ -125,12 +125,21 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-blue-100 selection:text-blue-900">
-      {/* Top Navbar */}
-      <header className="border-b border-slate-100 bg-white/90 backdrop-blur-md sticky top-0 z-30">
+    <div className="relative min-h-[100dvh] flex flex-col text-white selection:bg-sky-500/30 selection:text-white overflow-x-hidden">
+      {/* GPU-composited fixed background (Matches Lobby & Meeting Workspace) */}
+      <div
+        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-center bg-no-repeat transform-gpu will-change-transform"
+        style={{
+          backgroundImage: "url('/meeting-bg.png')",
+          backgroundColor: "#0B1528",
+        }}
+      />
+
+      {/* Top Navbar - Frosted Dark Glass Chrome */}
+      <header className="relative z-20 border-b border-white/10 bg-slate-950/40 backdrop-blur-xl sticky top-0">
         <div className="container mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link href="/home" className="flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden transition-transform duration-200 group-hover:scale-105">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden transition-transform duration-200 group-hover:scale-105 border border-white/20 shadow-sm">
               <Image
                 src="/nilaa-logo.jpg"
                 alt="Nilaa RTC"
@@ -140,8 +149,8 @@ export default function HomePage() {
                 priority
               />
             </div>
-            <span className="font-heading text-lg font-bold tracking-tight text-slate-900">
-              Nilaa <span className="text-blue-600 font-extrabold">RTC</span>
+            <span className="font-heading text-lg font-bold tracking-tight text-white drop-shadow-xs">
+              Nilaa <span className="text-sky-400 font-extrabold">RTC</span>
             </span>
           </Link>
 
@@ -152,10 +161,10 @@ export default function HomePage() {
             {/* Green Room & Settings Button */}
             <button
               onClick={() => setDrawerOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-semibold text-white/90 hover:text-white transition-colors cursor-pointer backdrop-blur-md shadow-xs"
               title="Open Audio & Video Settings"
             >
-              <div className="h-6 w-6 rounded-full overflow-hidden bg-blue-100 text-blue-600 flex items-center justify-center text-[11px] font-bold shrink-0">
+              <div className="h-6 w-6 rounded-full overflow-hidden bg-sky-500/20 text-sky-300 flex items-center justify-center text-[11px] font-bold shrink-0 border border-white/20">
                 {userProfile.avatarUrl ? (
                   <img src={userProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
@@ -163,7 +172,7 @@ export default function HomePage() {
                 )}
               </div>
               <span className="hidden sm:inline">Settings & Check</span>
-              <Sliders className="h-3.5 w-3.5 text-blue-600" />
+              <Sliders className="h-3.5 w-3.5 text-sky-400" />
             </button>
 
             {/* Sign Out Button */}
@@ -171,7 +180,7 @@ export default function HomePage() {
               variant="ghost"
               size="sm"
               onClick={handleSignOut}
-              className="text-slate-500 hover:text-red-600 gap-1.5 text-xs cursor-pointer"
+              className="text-white/70 hover:text-red-400 hover:bg-white/10 gap-1.5 text-xs cursor-pointer"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Sign Out</span>
@@ -181,29 +190,29 @@ export default function HomePage() {
       </header>
 
       {/* Main Content Area: Clean, Spacious, Breathing Space */}
-      <main className="flex-1 container mx-auto max-w-4xl px-4 sm:px-6 py-12 sm:py-16 flex flex-col justify-center">
-        {/* Welcome Greeting - Left-aligned, Medium Geist Font, Breathing Space */}
+      <main className="relative z-10 flex-1 container mx-auto max-w-4xl px-4 sm:px-6 py-12 sm:py-16 flex flex-col justify-center">
+        {/* Welcome Greeting - Left-aligned, Medium Geist Font, White Typography */}
         <div className="mb-8 sm:mb-10 text-left">
-          <h1 className="font-sans text-2xl sm:text-3xl font-medium text-slate-900 tracking-tight">
+          <h1 className="font-sans text-2xl sm:text-3xl font-medium text-white tracking-tight drop-shadow-xs">
             Welcome,{" "}
-            <span className="text-blue-600 font-medium">
+            <span className="text-sky-400 font-medium">
               {userProfile.displayName || user?.email?.split("@")[0] || "Friend"}
             </span>
           </h1>
         </div>
 
-        {/* Unified Pill Bar: Start Instant Meeting + Join with Code (Exact same design and codebase as Landing Page) */}
+        {/* Unified Pill Bar: Start Instant Meeting + Join with Code (Frosted Glass Dark UI) */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="w-full max-w-xl flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 p-2 rounded-[22px] bg-white border border-slate-200/90 shadow-lg shadow-sky-950/5 mb-14 sm:mb-16"
+          className="w-full max-w-xl flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 p-2 rounded-[22px] bg-slate-900/65 border border-white/20 backdrop-blur-xl shadow-2xl shadow-sky-950/40 mb-14 sm:mb-16"
         >
           {/* Left Pill: Start Instant Meeting */}
           <button
             onClick={handleCreateInstantMeeting}
             disabled={isCreating}
-            className="flex-1 flex items-center justify-center gap-2.5 text-sm sm:text-base font-medium px-5 py-3 rounded-[16px] bg-gradient-to-b from-sky-400 to-sky-600 hover:from-sky-500 hover:to-sky-700 active:scale-[0.98] text-white disabled:opacity-60 transition-all shadow-sm cursor-pointer"
+            className="flex-1 flex items-center justify-center gap-2.5 text-sm sm:text-base font-medium px-5 py-3 rounded-[16px] bg-gradient-to-b from-sky-400 to-sky-600 hover:from-sky-500 hover:to-sky-700 active:scale-[0.98] text-white disabled:opacity-60 transition-all shadow-md shadow-sky-950/20 cursor-pointer"
           >
             {isCreating ? (
               <div className="flex items-center gap-2">
@@ -219,7 +228,7 @@ export default function HomePage() {
           </button>
 
           {/* Divider */}
-          <div className="hidden sm:block h-8 w-[1px] bg-slate-200/80 my-auto" />
+          <div className="hidden sm:block h-8 w-[1px] bg-white/20 my-auto" />
 
           {/* Right Form: Enter Code + Join */}
           <form
@@ -227,34 +236,34 @@ export default function HomePage() {
             className="flex items-center gap-2 flex-1"
           >
             <div className="relative flex-1">
-              <Keyboard className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Keyboard className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
               <input
                 type="text"
                 placeholder="Enter code (e.g. X7K9M2)"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                className="w-full h-11 pl-9 pr-3 uppercase tracking-wider font-mono text-xs sm:text-sm rounded-[14px] border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent font-normal"
+                className="w-full h-11 pl-9 pr-3 uppercase tracking-wider font-mono text-xs sm:text-sm rounded-[14px] border border-white/20 bg-white/10 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent font-normal"
               />
             </div>
             <button
               type="submit"
               disabled={!joinCode.trim()}
-              className="shrink-0 px-4 h-11 rounded-[14px] bg-slate-50 border border-slate-200 text-slate-700 font-medium text-xs sm:text-sm hover:bg-slate-100 disabled:opacity-50 transition-colors shadow-xs cursor-pointer"
+              className="shrink-0 px-4 h-11 rounded-[14px] bg-white/15 border border-white/20 text-white font-medium text-xs sm:text-sm hover:bg-white/25 disabled:opacity-50 transition-colors shadow-xs cursor-pointer"
             >
               Join
             </button>
           </form>
         </motion.div>
 
-        {/* Clean Spec Status Bar */}
-        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-slate-500">
+        {/* Clean Spec Status Bar - Frosted Dark Pill */}
+        <div className="rounded-2xl bg-slate-900/60 border border-white/10 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-slate-300 backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <span className="flex h-2.5 w-2.5 rounded-full bg-blue-500 animate-pulse" />
+            <span className="flex h-2.5 w-2.5 rounded-full bg-sky-400 animate-pulse shadow-sm shadow-sky-400/50" />
             <span>Nilaa RTC supports up to 15 HD video participants per meeting room.</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-              <Clock className="h-4 w-4 text-blue-600" /> Zero friction • Browser-based
+            <span className="flex items-center gap-1.5 text-white font-medium">
+              <Clock className="h-4 w-4 text-sky-400" /> Zero friction • Browser-based
             </span>
           </div>
         </div>

@@ -142,10 +142,10 @@ export function InstallPwaButton({ className = "", variant = "primary" }: Instal
       <button
         type="button"
         onClick={handleInstallClick}
-        className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full backdrop-blur-xl bg-white/30 hover:bg-white/50 text-blue-600 border border-white/60 hover:border-white/90 font-sans text-xs font-medium shadow-xs transition-all cursor-pointer ${className}`}
+        className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full backdrop-blur-xl bg-white/15 hover:bg-white/25 text-white border border-white/25 hover:border-white/50 font-sans text-xs font-medium shadow-xs transition-all cursor-pointer ${className}`}
         title="Install Nilaa RTC as Desktop App"
       >
-        <span className="flex items-center justify-center p-0.5 rounded-xs bg-white/40">
+        <span className="flex items-center justify-center p-0.5 rounded-xs bg-white/20">
           {icon}
         </span>
         <span>{label}</span>
