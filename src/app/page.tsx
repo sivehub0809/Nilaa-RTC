@@ -17,6 +17,9 @@ import {
   Menu,
   X,
   Mail,
+  Languages,
+  FileText,
+  Wifi,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { generateMeetingCode, normalizeMeetingCode } from "@/lib/utils";
@@ -417,98 +420,89 @@ export default function LandingPage() {
             </form>
           </motion.div>
 
-          {/* Main Title - Geist font, Medium weight, Balanced Size */}
+          {/* Main Title */}
           <motion.h1
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="mt-14 sm:mt-16 font-sans text-4xl sm:text-5xl md:text-6xl font-medium tracking-tight text-slate-900 leading-[1.18] max-w-3xl"
           >
-            Clear, fast video meetings.{" "}
+            Meetings where you just talk,{" "}
             <span className="text-sky-500 font-medium">
-              Zero friction.
+              and nothing gets lost.
             </span>
           </motion.h1>
 
-          {/* Subtitle / Description - Larger size, Darker text for clear readability */}
+          {/* Subtitle / Description */}
           <motion.p
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
             className="mt-6 text-base sm:text-lg md:text-xl text-slate-700 font-normal max-w-2xl leading-relaxed"
           >
-            Connect instantly with up to 15 people. Crisp audio, sharp video,
-            real-time emoji reactions, and seamless screen sharing right from your browser.
+            Video calls for tutors and recruiters, with live captions, translation,
+            and an AI report when the call ends.
           </motion.p>
-
-          {/* Dedicated Get for Windows / Install App Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5"
-          >
-            <InstallPwaButton />
-          </motion.div>
         </section>
 
         {/* Feature Highlights Grid */}
         <section className="px-4 sm:px-6 py-16 border-t border-sky-100/60 max-w-6xl mx-auto w-full">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Card 1 */}
+            {/* Card 1 - Live Captions + Translation */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35 }}
               className="rounded-[22px] bg-white/80 border border-white/90 p-6 sm:p-7 flex flex-col gap-3 hover:border-sky-200 hover:shadow-lg hover:shadow-sky-900/5 transition-all backdrop-blur-sm"
             >
-              <div className="h-10 w-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-500">
-                <Zap className="h-5 w-5" />
+              <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center">
+                <Languages className="h-5 w-5 text-white" />
               </div>
               <h3 className="font-heading text-lg font-medium text-slate-800">
-                Instant & Fast
+                Live Captions + Translation
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 font-light leading-relaxed">
-                Join in under a second. No downloads, no waiting lobbies, and
-                no bloated software. Responsive button interactions throughout.
+                Khmer and English side by side, always there for you.
+                <br />
+                <span className="text-slate-400 italic">(Unlike your Girlfriend :) )</span>
               </p>
             </motion.div>
 
-            {/* Card 2 */}
+            {/* Card 2 - AI Report After Every Call */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
               className="rounded-[22px] bg-white/80 border border-white/90 p-6 sm:p-7 flex flex-col gap-3 hover:border-sky-200 hover:shadow-lg hover:shadow-sky-900/5 transition-all backdrop-blur-sm"
             >
-              <div className="h-10 w-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-500">
-                <Smile className="h-5 w-5" />
+              <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center">
+                <FileText className="h-5 w-5 text-white" />
               </div>
               <h3 className="font-heading text-lg font-medium text-slate-800">
-                Interactive & Lively
+                AI Report After Every Call
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 font-light leading-relaxed">
-                Live chat, spring-animated emoji reactions, raise hand, and
-                active speaker glow make every conversation engaging.
+                Tutors get what the student struggled with. Recruiters get strengths,
+                key answers, and a shareable report.
               </p>
             </motion.div>
 
-            {/* Card 3 */}
+            {/* Card 3 - Clear Calls on Weak Networks */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.45 }}
               className="rounded-[22px] bg-white/80 border border-white/90 p-6 sm:p-7 flex flex-col gap-3 hover:border-sky-200 hover:shadow-lg hover:shadow-sky-900/5 transition-all backdrop-blur-sm"
             >
-              <div className="h-10 w-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-500">
-                <Shield className="h-5 w-5" />
+              <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center">
+                <Wifi className="h-5 w-5 text-white" />
               </div>
               <h3 className="font-heading text-lg font-medium text-slate-800">
-                Reliable & Clear
+                Clear Calls on Weak Networks
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 font-light leading-relaxed">
-                Built on LiveKit SFU architecture. Adapts stream quality
-                automatically to weak connections with sub-second latency.
+                Auto quality adjustment, plus audio-only fallback.
+                Every word comes through, no matter the connection.
               </p>
             </motion.div>
           </div>
