@@ -89,6 +89,15 @@ h1, h2, h3, h4, h5, h6 {
   filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.9));
 }
 
+/* Unzoomable Workspace (Disables mobile pinch/double-tap zoom and viewport bounce) */
+.unzoomable-workspace {
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 /* Respect reduce-motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {

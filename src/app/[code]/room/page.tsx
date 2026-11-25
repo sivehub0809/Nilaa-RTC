@@ -338,6 +338,50 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
     }
   };
 
+  // Prevent browser pinch-to-zoom, Safari gesture zoom, wheel zoom, and keyboard zoom in workspace
+  useEffect(() => {
+    const preventGesture = (e: Event) => {
+      e.preventDefault();
+    };
+
+    const preventTouchZoom = (e: TouchEvent) => {
+      if (e.touches && e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+
+    const preventWheelZoom = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+      }
+    };
+
+    const preventKeyZoom = (e: KeyboardEvent) => {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key === "+" || e.key === "-" || e.key === "=" || e.key === "0")
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener("gesturestart", preventGesture, { passive: false });
+    document.addEventListener("gesturechange", preventGesture, { passive: false });
+    document.addEventListener("gestureend", preventGesture, { passive: false });
+    document.addEventListener("touchmove", preventTouchZoom, { passive: false });
+    window.addEventListener("wheel", preventWheelZoom, { passive: false });
+    window.addEventListener("keydown", preventKeyZoom);
+
+    return () => {
+      document.removeEventListener("gesturestart", preventGesture);
+      document.removeEventListener("gesturechange", preventGesture);
+      document.removeEventListener("gestureend", preventGesture);
+      document.removeEventListener("touchmove", preventTouchZoom);
+      window.removeEventListener("wheel", preventWheelZoom);
+      window.removeEventListener("keydown", preventKeyZoom);
+    };
+  }, []);
+
   // Mobile-compatible screen sharing handler
   const handleToggleScreenShare = async () => {
     try {
@@ -861,7 +905,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
     : [];
 
   return (
-    <div className="relative h-[100dvh] w-screen overflow-hidden flex flex-col select-none touch-manipulation bg-[#0B0C0E]">
+    <div className="relative h-[100dvh] w-screen overflow-hidden flex flex-col select-none touch-manipulation overscroll-none unzoomable-workspace bg-[#0B0C0E]">
       {/* Zoom-style neutral deep black workspace background for maximum contrast and zero distraction */}
       <div className="fixed inset-0 pointer-events-none z-0 bg-[#0B0C0E]" />
 
@@ -1365,15 +1409,15 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
         )}
       </div>
 
-      {/* Bottom Controls Bar - Zoom Style Reorganized Layout (Touchable on Desktop & Mobile) */}
-      <footer className="h-20 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-white/10 bg-[#0B0C0E]/90 backdrop-blur-xl px-2 sm:px-4 md:px-6 flex items-center justify-between shrink-0 z-20">
+      {/* Bottom Controls Bar - Compact Ergonomic Layout (Sleek & Unobtrusive) */}
+      <footer className="h-16 pb-[max(0.5rem,env(safe-area-inset-bottom))] border-t border-white/10 bg-[#0B0C0E]/90 backdrop-blur-xl px-2 sm:px-4 md:px-5 flex items-center justify-between shrink-0 z-20">
         {/* Left Section: Mic & Camera Buttons */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Mic Button */}
           <button
             type="button"
             onClick={() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)}
-            className={`h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               isMicrophoneEnabled
                 ? "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
                 : "bg-gradient-to-b from-rose-500 to-red-600 text-white shadow-md shadow-red-500/25 hover:brightness-105"
@@ -1382,9 +1426,9 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             aria-label={isMicrophoneEnabled ? "Mute Microphone" : "Unmute Microphone"}
           >
             {isMicrophoneEnabled ? (
-              <Mic className="h-4 w-4 sm:h-5 sm:w-5 text-sky-600" />
+              <Mic className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-sky-600" />
             ) : (
-              <MicOff className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+              <MicOff className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-white" />
             )}
           </button>
 
@@ -1392,7 +1436,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
           <button
             type="button"
             onClick={() => localParticipant.setCameraEnabled(!isCameraEnabled)}
-            className={`h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               isCameraEnabled
                 ? "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
                 : "bg-gradient-to-b from-rose-500 to-red-600 text-white shadow-md shadow-red-500/25 hover:brightness-105"
@@ -1401,20 +1445,20 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             aria-label={isCameraEnabled ? "Turn Off Camera" : "Turn On Camera"}
           >
             {isCameraEnabled ? (
-              <VideoIcon className="h-4 w-4 sm:h-5 sm:w-5 text-sky-600" />
+              <VideoIcon className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-sky-600" />
             ) : (
-              <VideoOff className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+              <VideoOff className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-white" />
             )}
           </button>
         </div>
 
         {/* Center Section: Screen Share, Raise Hand, and Emoji Reactions */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 mx-auto">
+        <div className="flex items-center gap-1.5 sm:gap-2 mx-auto">
           {/* Screen Share Button */}
           <button
             type="button"
             onClick={handleToggleScreenShare}
-            className={`h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               isScreenShareEnabled
                 ? "bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/30"
                 : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
@@ -1422,14 +1466,14 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             title={isScreenShareEnabled ? "Stop Sharing Screen" : "Share Screen"}
             aria-label="Toggle Screen Share"
           >
-            <Share2 className={`h-4 w-4 sm:h-5 sm:w-5 ${isScreenShareEnabled ? "text-white" : "text-slate-700"}`} />
+            <Share2 className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${isScreenShareEnabled ? "text-white" : "text-slate-700"}`} />
           </button>
 
           {/* Raise Hand Button */}
           <button
             type="button"
             onClick={toggleHand}
-            className={`h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               isHandRaised
                 ? "bg-gradient-to-b from-amber-400 to-yellow-500 text-white shadow-md shadow-yellow-500/30"
                 : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
@@ -1437,7 +1481,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             title={isHandRaised ? "Lower Hand" : "Raise Hand"}
             aria-label="Raise or Lower Hand"
           >
-            <Hand className={`h-4 w-4 sm:h-5 sm:w-5 ${isHandRaised ? "text-white fill-white" : "text-slate-700"}`} />
+            <Hand className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${isHandRaised ? "text-white fill-white" : "text-slate-700"}`} />
           </button>
 
           {/* Emoji Reactions Button */}
@@ -1445,7 +1489,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             <button
               type="button"
               onClick={() => setIsReactionMenuOpen(!isReactionMenuOpen)}
-              className={`h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+              className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
                 isReactionMenuOpen
                   ? "bg-gradient-to-b from-sky-100 to-blue-100 text-blue-700 border border-sky-300/80 shadow-sm"
                   : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
@@ -1453,22 +1497,22 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
               title="Send Reaction"
               aria-label="Send Reaction"
             >
-              <Smile className={`h-4 w-4 sm:h-5 sm:w-5 ${isReactionMenuOpen ? "text-blue-600" : "text-slate-700"}`} />
+              <Smile className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${isReactionMenuOpen ? "text-blue-600" : "text-slate-700"}`} />
             </button>
 
             <AnimatePresence>
               {isReactionMenuOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute bottom-14 sm:bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-1 sm:gap-1.5 p-1.5 sm:p-2 bg-white/95 backdrop-blur-xl border border-sky-100 rounded-2xl shadow-2xl z-30"
+                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                  className="absolute bottom-12 sm:bottom-13 left-1/2 -translate-x-1/2 flex items-center gap-1 sm:gap-1.5 p-1.5 sm:p-2 bg-white/95 backdrop-blur-xl border border-sky-100 rounded-2xl shadow-2xl z-30"
                 >
                   {REACTION_EMOJIS.map((emoji) => (
                     <button
                       key={emoji}
                       onClick={() => triggerReaction(emoji)}
-                      className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center text-lg sm:text-xl hover:bg-sky-50 rounded-xl active:scale-85 transition-transform cursor-pointer"
+                      className="h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center text-lg sm:text-xl hover:bg-sky-50 rounded-xl active:scale-85 transition-transform cursor-pointer"
                     >
                       {emoji}
                     </button>
@@ -1480,14 +1524,14 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
         </div>
 
         {/* Right Section: Chat, Participants, and Leave Call */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Chat Button */}
           <button
             type="button"
             onClick={() => setActivePanel(activePanel === "chat" ? null : "chat")}
             title="In-call chat"
             aria-label="Toggle in-call chat"
-            className={`h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center relative transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center relative transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               activePanel === "chat"
                 ? "bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/30"
                 : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
@@ -1507,7 +1551,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             }
             title="People in room"
             aria-label="Toggle people list"
-            className={`h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center relative transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
+            className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center relative transition-all duration-150 cursor-pointer active:scale-90 active:brightness-95 ${
               activePanel === "participants"
                 ? "bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-md shadow-blue-500/30"
                 : "bg-gradient-to-b from-white to-slate-100 hover:from-white hover:to-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-sm shadow-slate-900/5"
@@ -1515,23 +1559,23 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
           >
             <Users className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
             {participants.length > 1 && (
-              <span className="absolute -top-1 -right-1 px-1 min-w-[16px] h-4 rounded-full bg-slate-800 text-[10px] text-white font-bold flex items-center justify-center border border-white/50">
+              <span className="absolute -top-1 -right-1 px-1 min-w-[15px] h-3.5 rounded-full bg-slate-800 text-[9px] text-white font-bold flex items-center justify-center border border-white/50">
                 {participants.length}
               </span>
             )}
           </button>
 
-          {/* Leave Call Button (1.5x Darker Red Gradient + Specular Top Sheen) */}
+          {/* Leave Call Button (Compact, Elegant Dark Red Gradient + Top Sheen) */}
           <button
             type="button"
             onClick={handleLeaveRoom}
-            className="group relative h-9 sm:h-11 md:h-12 px-3 sm:px-4 md:px-5 rounded-xl sm:rounded-2xl font-medium text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 bg-gradient-to-b from-red-600 via-rose-700 to-red-800 hover:from-red-500 hover:to-red-700 border-t border-white/30 border-x border-b border-red-900/60 text-white shadow-lg shadow-red-950/40 transition-all duration-150 cursor-pointer active:scale-92 active:brightness-95 overflow-hidden"
+            className="group relative h-9 sm:h-10 px-3 sm:px-3.5 rounded-xl font-medium text-xs sm:text-sm flex items-center gap-1.5 bg-gradient-to-b from-red-600 via-rose-700 to-red-800 hover:from-red-500 hover:to-red-700 border-t border-white/30 border-x border-b border-red-900/60 text-white shadow-md shadow-red-950/40 transition-all duration-150 cursor-pointer active:scale-92 active:brightness-95 overflow-hidden"
             title="Leave Meeting"
             aria-label="Leave Meeting"
           >
             {/* Liquid specular highlight sheen */}
             <span className="pointer-events-none absolute inset-x-2 sm:inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
-            <PhoneOff className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white shrink-0" />
+            <PhoneOff className="h-3.5 w-3.5 text-white shrink-0" />
             <span className="hidden xs:inline sm:inline">Leave</span>
           </button>
         </div>
