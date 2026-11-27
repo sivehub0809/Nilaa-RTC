@@ -17,7 +17,19 @@ import {
   useSpeakingParticipants,
   useConnectionState,
 } from "@livekit/components-react";
-import { Track, ConnectionState, Room } from "livekit-client";
+import {
+  Track,
+  ConnectionState,
+  Room,
+  RoomOptions,
+  RoomConnectOptions,
+  AudioPresets,
+  VideoPresets,
+  VideoQuality,
+  ConnectionQuality,
+  RoomEvent,
+  RemoteTrackPublication,
+} from "livekit-client";
 import {
   Mic,
   MicOff,
@@ -58,7 +70,12 @@ import { normalizeMeetingCode } from "@/lib/utils";
 import { CalmSpinner } from "@/components/ui/calm-spinner";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { getCachedUserSettings } from "@/lib/user-settings";
+import { getCachedUserSettings, saveUserSettings } from "@/lib/user-settings";
+import {
+  NetworkHealthControl,
+  NetworkSignalBars,
+  NetworkMode,
+} from "@/components/meeting/network-health";
 
 interface RoomPageProps {
   params: Promise<{
@@ -89,6 +106,52 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
   const [disconnectReason, setDisconnectReason] = useState<string>("");
 
   const userInitiatedLeave = useRef(false);
+
+  // Hardened LiveKit Room & Connection Options for Cambodian mobile & weak networks
+  const { roomOptions, connectOptions } = useMemo(() => {
+    const cached = getCachedUserSettings();
+    const isDataSaver = !!cached.dataSaverMode;
+
+    const options: RoomOptions = {
+      adaptiveStream: true,
+      dynacast: true,
+      stopLocalTrackOnUnpublish: true,
+      audioCaptureDefaults: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        deviceId: cached.preferredMicId || undefined,
+      },
+      videoCaptureDefaults: {
+        resolution: isDataSaver
+          ? VideoPresets.h360.resolution
+          : VideoPresets.h720.resolution,
+        deviceId: cached.preferredCameraId || undefined,
+      },
+      publishDefaults: {
+        dtx: true,
+        red: true,
+        audioPreset: AudioPresets.speech,
+        simulcast: true,
+        videoSimulcastLayers: [VideoPresets.h180, VideoPresets.h360],
+        videoEncoding: isDataSaver
+          ? VideoPresets.h360.encoding
+          : VideoPresets.h720.encoding,
+        degradationPreference: "maintain-framerate",
+      },
+      audioOutput: cached.preferredSpeakerId
+        ? { deviceId: cached.preferredSpeakerId }
+        : undefined,
+    };
+
+    const connectOpts: RoomConnectOptions = {
+      autoSubscribe: true,
+      subscriberAllowPause: true,
+      peerConnectionTimeout: 20000,
+    };
+
+    return { roomOptions: options, connectOptions: connectOpts };
+  }, []);
 
   const isHostParam =
     searchParams.get("host") === "1" ||
@@ -240,6 +303,8 @@ export default function MeetingRoomPage({ params }: RoomPageProps) {
       connect={true}
       video={initialVideo}
       audio={initialAudio}
+      options={roomOptions}
+      connectOptions={connectOptions}
       data-lk-theme="default"
       className="h-[100dvh] w-screen bg-background overflow-hidden flex flex-col"
       onError={(err) => {
@@ -313,6 +378,76 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
   const [activePanel, setActivePanel] = useState<"chat" | "participants" | null>(null);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
+
+  // Network Health & Data Saver Engine State
+  const [networkMode, setNetworkMode] = useState<NetworkMode>(() =>
+    getCachedUserSettings().dataSaverMode ? "saver" : "auto"
+  );
+  const [localConnectionQuality, setLocalConnectionQuality] = useState<ConnectionQuality>(
+    localParticipant.connectionQuality ?? ConnectionQuality.Unknown
+  );
+
+  // Apply Data Saver / Audio-Only policy to all remote camera subscriptions (keeps audio & screen share clear)
+  const applyNetworkModeToRoom = useCallback(
+    (mode: NetworkMode) => {
+      if (!room) return;
+      room.remoteParticipants.forEach((participant) => {
+        participant.videoTrackPublications.forEach((pub) => {
+          if (pub instanceof RemoteTrackPublication && pub.source === Track.Source.Camera) {
+            if (mode === "audio-only") {
+              pub.setEnabled(false);
+            } else if (mode === "saver") {
+              pub.setEnabled(true);
+              pub.setVideoQuality(VideoQuality.LOW);
+            } else {
+              pub.setEnabled(true);
+              pub.setVideoQuality(VideoQuality.HIGH);
+            }
+          }
+        });
+      });
+    },
+    [room]
+  );
+
+  useEffect(() => {
+    applyNetworkModeToRoom(networkMode);
+  }, [networkMode, applyNetworkModeToRoom]);
+
+  useEffect(() => {
+    if (!room) return;
+
+    const handleQualityChanged = (quality: ConnectionQuality, participant: { isLocal: boolean }) => {
+      if (participant.isLocal) {
+        setLocalConnectionQuality(quality);
+      }
+    };
+
+    const handleTrackSubscribed = () => {
+      applyNetworkModeToRoom(networkMode);
+    };
+
+    room.on(RoomEvent.ConnectionQualityChanged, handleQualityChanged);
+    room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed);
+
+    return () => {
+      room.off(RoomEvent.ConnectionQualityChanged, handleQualityChanged);
+      room.off(RoomEvent.TrackSubscribed, handleTrackSubscribed);
+    };
+  }, [room, networkMode, applyNetworkModeToRoom]);
+
+  const handleNetworkModeChange = (nextMode: NetworkMode) => {
+    setNetworkMode(nextMode);
+    saveUserSettings({ dataSaverMode: nextMode !== "auto" });
+
+    if (nextMode === "audio-only") {
+      toast("Audio-Only mode active — incoming cameras paused");
+    } else if (nextMode === "saver") {
+      toast("Data Saver active — low-bandwidth video");
+    } else {
+      toast("Auto (HD) video restored");
+    }
+  };
 
   // Leave Meeting & Eviction States
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
@@ -939,7 +1074,14 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
           <CopyCode code={code} />
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
+          {/* Network Health & Data Saver Pill */}
+          <NetworkHealthControl
+            quality={localConnectionQuality}
+            connectionState={connectionState}
+            mode={networkMode}
+            onModeChange={handleNetworkModeChange}
+          />
           {/* Meeting Duration Timer in Geist Vercel font */}
           <MeetingTimer />
         </div>
@@ -1083,7 +1225,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                     </button>
 
                     {/* Video Track */}
-                    {hasVideo ? (
+                    {hasVideo && !(networkMode === "audio-only" && !isLocal && !isScreenShare) ? (
                       <VideoTrack
                         trackRef={trackRef}
                         className={`w-full h-full ${
@@ -1103,12 +1245,17 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                             {pName.charAt(0).toUpperCase()}
                           </div>
                         )}
-                        <span className="text-sm text-white/50 font-light">Camera Off</span>
+                        <span className="text-sm text-white/50 font-light">
+                          {networkMode === "audio-only" && !isLocal && !isScreenShare
+                            ? "Audio Only"
+                            : "Camera Off"}
+                        </span>
                       </div>
                     )}
 
                     {/* Participant Name & Status Pill */}
                     <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15 text-xs z-10 text-white">
+                      <NetworkSignalBars quality={trackRef.participant.connectionQuality} size="xs" />
                       <span className="font-medium text-white truncate max-w-[140px]">
                         {pName} {isLocal && "(You)"}
                       </span>
@@ -1253,7 +1400,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                     </svg>
 
                     {/* Live Video Track */}
-                    {hasVideo ? (
+                    {hasVideo && !(networkMode === "audio-only" && !isLocal && !isScreenShare) ? (
                       <VideoTrack
                         trackRef={trackRef}
                         className={`w-full h-full ${
@@ -1273,12 +1420,17 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
                             {pName.charAt(0).toUpperCase()}
                           </div>
                         )}
-                        <span className="text-xs text-white/50 font-light">Camera Off</span>
+                        <span className="text-xs text-white/50 font-light">
+                          {networkMode === "audio-only" && !isLocal && !isScreenShare
+                            ? "Audio Only"
+                            : "Camera Off"}
+                        </span>
                       </div>
                     )}
 
                     {/* Participant Name & Status Pill */}
                     <div className="absolute bottom-2.5 left-2.5 flex items-center gap-2 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15 text-xs z-10 text-white">
+                      <NetworkSignalBars quality={trackRef.participant.connectionQuality} size="xs" />
                       <span className="font-medium text-white truncate max-w-[120px]">
                         {pName} {isLocal && "(You)"}
                       </span>

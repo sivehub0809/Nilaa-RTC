@@ -678,6 +678,19 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
                       className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
                     />
                   </label>
+
+                  <label className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                    <div>
+                      <span className="text-xs font-semibold text-slate-800 block">Data Saver Mode</span>
+                      <span className="text-[10px] text-slate-500">Lower video bandwidth for weak mobile networks</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={settings.dataSaverMode}
+                      onChange={(e) => setSettings({ ...settings, dataSaverMode: e.target.checked })}
+                      className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
+                    />
+                  </label>
                 </div>
               </div>
             </div>
