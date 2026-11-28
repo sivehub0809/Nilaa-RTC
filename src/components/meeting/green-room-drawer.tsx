@@ -12,7 +12,11 @@ import {
   Volume2,
   SwitchCamera,
   FlipHorizontal,
-  Shield,
+  Eye,
+  EyeOff,
+  ImagePlus,
+  Trash2,
+  Loader2,
   Crop,
   ZoomIn,
   Sliders,
@@ -30,7 +34,7 @@ import {
   fetchUserSettings,
   saveUserSettings,
 } from "@/lib/user-settings";
-import { compressRawImageFile, cropAvatarToBlob } from "@/lib/image-compression";
+import { compressRawImageFile, cropAvatarToBlob, compressBackgroundImage } from "@/lib/image-compression";
 import { toast } from "sonner";
 
 interface GreenRoomDrawerProps {
@@ -68,6 +72,8 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
   const [cropZoom, setCropZoom] = useState(1);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bgFileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingBg, setUploadingBg] = useState(false);
 
   // Load settings when drawer opens
   useEffect(() => {
@@ -650,6 +656,175 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
                     ))}
                   </select>
                 )}
+              </div>
+
+              {/* Virtual Background & Blur */}
+              <div className="space-y-3 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Virtual Background
+                </span>
+
+                {/* Blur Toggle */}
+                <label className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200 cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    {settings.backgroundBlur ? (
+                      <Eye className="h-4 w-4 text-blue-600" />
+                    ) : (
+                      <EyeOff className="h-4 w-4 text-slate-400" />
+                    )}
+                    <div>
+                      <span className="text-xs font-semibold text-slate-800 block">Background Blur</span>
+                      <span className="text-[10px] text-slate-500">Blur your real background behind you</span>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.backgroundBlur}
+                    onChange={(e) => setSettings({ ...settings, backgroundBlur: e.target.checked })}
+                    className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
+                  />
+                </label>
+
+                {/* Blur Level Slider (only visible when blur is enabled) */}
+                {settings.backgroundBlur && (
+                  <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
+                      <span className="flex items-center gap-1.5">
+                        <Sliders className="h-3.5 w-3.5 text-blue-600" />
+                        <span>Blur Level</span>
+                      </span>
+                      <span className="font-mono text-[11px] text-slate-500">
+                        {settings.blurLevel}px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="20"
+                      step="1"
+                      value={settings.blurLevel}
+                      onChange={(e) => setSettings({ ...settings, blurLevel: parseInt(e.target.value, 10) })}
+                      className="w-full accent-blue-600 cursor-pointer h-2 bg-slate-200 rounded-lg"
+                    />
+                    <div className="flex items-center justify-between text-[10px] text-slate-400">
+                      <span>Subtle</span>
+                      <span>Heavy</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom Background Images */}
+                <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
+                    <span className="flex items-center gap-1.5">
+                      <ImagePlus className="h-3.5 w-3.5 text-blue-600" />
+                      <span>Custom Backgrounds</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      {settings.backgroundImages.length}/5
+                    </span>
+                  </div>
+
+                  {/* Existing background image thumbnails */}
+                  {settings.backgroundImages.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {settings.backgroundImages.map((imgUrl, idx) => (
+                        <div
+                          key={idx}
+                          className="relative group aspect-video rounded-lg overflow-hidden border border-slate-200 bg-slate-100"
+                        >
+                          <img
+                            src={imgUrl}
+                            alt={`Background ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = settings.backgroundImages.filter((_, i) => i !== idx);
+                              setSettings({ ...settings, backgroundImages: updated });
+                              toast("Background image removed");
+                            }}
+                            className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                          >
+                            <Trash2 className="h-4 w-4 text-white" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Upload button */}
+                  {settings.backgroundImages.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={() => bgFileInputRef.current?.click()}
+                      disabled={uploadingBg}
+                      className="w-full h-16 rounded-xl border-2 border-dashed border-slate-300 hover:border-blue-400 bg-slate-50 hover:bg-blue-50/50 flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-blue-600 transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {uploadingBg ? (
+                        <div className="flex items-center gap-1.5">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-[11px] font-medium">Compressing…</span>
+                        </div>
+                      ) : (
+                        <>
+                          <ImagePlus className="h-4 w-4" />
+                          <span className="text-[11px] font-medium">Add Background Image</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  <input
+                    ref={bgFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!file) return;
+
+                      if (!file.type.startsWith("image/")) {
+                        toast.error("Please select an image file (JPEG, PNG, or WebP)");
+                        return;
+                      }
+
+                      if (settings.backgroundImages.length >= 5) {
+                        toast.error("Maximum 5 background images allowed. Remove one first.");
+                        return;
+                      }
+
+                      setUploadingBg(true);
+                      try {
+                        const compressed = await compressBackgroundImage(file, 1280, 720, 0.75);
+
+                        // Safety check: reject if compressed data URL is still too large (>200KB)
+                        if (compressed.length > 200 * 1024) {
+                          toast.error("Image is still too large after compression. Please use a smaller photo.");
+                          setUploadingBg(false);
+                          return;
+                        }
+
+                        setSettings((prev) => ({
+                          ...prev,
+                          backgroundImages: [...prev.backgroundImages, compressed],
+                        }));
+                        toast.success("Background image added!");
+                      } catch (err: unknown) {
+                        const msg = err instanceof Error ? err.message : "Failed to process image";
+                        toast.error(msg);
+                      } finally {
+                        setUploadingBg(false);
+                      }
+                    }}
+                    className="hidden"
+                  />
+
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    Images are auto-compressed to 720p JPEG (~80–120 KB) to keep the app fast. Max 5 images.
+                  </p>
+                </div>
               </div>
 
               {/* Privacy & Safety Defaults */}

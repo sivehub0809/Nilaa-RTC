@@ -13,6 +13,8 @@ export interface UserSettings {
   preferredMicId: string;
   preferredSpeakerId: string;
   backgroundBlur: boolean;
+  blurLevel: number; // 0-20 CSS blur px magnitude
+  backgroundImages: string[]; // compressed data-URLs of custom background images
   mirrorVideo: boolean;
 }
 
@@ -29,6 +31,8 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   preferredMicId: "",
   preferredSpeakerId: "",
   backgroundBlur: false,
+  blurLevel: 10,
+  backgroundImages: [],
   mirrorVideo: true,
 };
 
@@ -104,6 +108,8 @@ export async function fetchUserSettings(): Promise<UserSettings> {
       preferredMicId: meta.preferred_mic_id || cached.preferredMicId,
       preferredSpeakerId: meta.preferred_speaker_id || cached.preferredSpeakerId,
       backgroundBlur: meta.background_blur !== undefined ? meta.background_blur : cached.backgroundBlur,
+      blurLevel: meta.blur_level !== undefined ? meta.blur_level : cached.blurLevel,
+      backgroundImages: cached.backgroundImages, // images stay local only (too large for auth metadata)
       mirrorVideo: meta.mirror_video !== undefined ? meta.mirror_video : cached.mirrorVideo,
     };
 
@@ -166,6 +172,7 @@ export async function saveUserSettings(settings: Partial<UserSettings>): Promise
             preferred_mic_id: updated.preferredMicId,
             preferred_speaker_id: updated.preferredSpeakerId,
             background_blur: updated.backgroundBlur,
+            blur_level: updated.blurLevel,
             mirror_video: updated.mirrorVideo,
           },
         });

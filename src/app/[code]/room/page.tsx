@@ -56,6 +56,7 @@ import {
   AlertCircle,
   X,
   LayoutGrid,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyCode } from "@/components/motion/copy-code";
@@ -76,6 +77,7 @@ import {
   NetworkSignalBars,
   NetworkMode,
 } from "@/components/meeting/network-health";
+import { GreenRoomDrawer } from "@/components/meeting/green-room-drawer";
 
 interface RoomPageProps {
   params: Promise<{
@@ -378,6 +380,7 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
   const [activePanel, setActivePanel] = useState<"chat" | "participants" | null>(null);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Network Health & Data Saver Engine State
   const [networkMode, setNetworkMode] = useState<NetworkMode>(() =>
@@ -1082,6 +1085,21 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             mode={networkMode}
             onModeChange={handleNetworkModeChange}
           />
+
+          {/* Settings Gear Icon – Gradient UI Button */}
+          <button
+            type="button"
+            onClick={() => setIsSettingsOpen(true)}
+            className="h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 hover:brightness-110 shadow-sm"
+            style={{
+              background: "linear-gradient(135deg, #38BDF8 0%, #6366F1 50%, #A855F7 100%)",
+            }}
+            title="Settings & Green Room"
+            aria-label="Open Settings"
+          >
+            <Settings className="h-4 w-4 text-white drop-shadow-sm" />
+          </button>
+
           {/* Meeting Duration Timer in Geist Vercel font */}
           <MeetingTimer />
         </div>
@@ -1873,6 +1891,12 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
           </div>
         )}
       </AnimatePresence>
+
+      {/* Settings & Green Room Drawer (opened from header gear icon) */}
+      <GreenRoomDrawer
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </div>
   );
 }

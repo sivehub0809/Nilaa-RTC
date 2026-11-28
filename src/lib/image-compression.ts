@@ -61,6 +61,66 @@ export async function compressRawImageFile(
 }
 
 /**
+ * Compress a background image file for virtual background use.
+ * Downscales to a safe 1280×720 canvas (720p) and outputs a JPEG data URL
+ * at 0.75 quality, keeping each image under ~80–120KB to avoid
+ * crashing localStorage or bloating memory.
+ */
+export async function compressBackgroundImage(
+  file: File,
+  maxWidth = 1280,
+  maxHeight = 720,
+  quality = 0.75
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // Guard: reject files larger than 15 MB raw (phone burst photos, etc.)
+    if (file.size > 15 * 1024 * 1024) {
+      return reject(new Error("Image file is too large (>15 MB). Please choose a smaller photo."));
+    }
+
+    const reader = new FileReader();
+
+    reader.onerror = () => reject(new Error("Failed to read background image file"));
+
+    reader.onload = () => {
+      const img = new Image();
+
+      img.onerror = () => reject(new Error("Failed to decode background image"));
+
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        // Downscale proportionally to fit inside maxWidth × maxHeight
+        const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          return resolve(reader.result as string);
+        }
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressed = canvas.toDataURL("image/jpeg", quality);
+        resolve(compressed);
+      };
+
+      img.src = reader.result as string;
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
  * Creates a circular-cropped, ultra-optimized WebP avatar blob (size 192x192, ~8KB to 15KB).
  */
 export async function cropAvatarToBlob(
