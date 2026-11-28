@@ -15,6 +15,7 @@ export interface UserSettings {
   backgroundBlur: boolean;
   blurLevel: number; // 0-20 CSS blur px magnitude
   backgroundImages: string[]; // compressed data-URLs of custom background images
+  selectedBackgroundIndex: number; // -1 for none or blur, 0..4 for custom image
   mirrorVideo: boolean;
 }
 
@@ -33,6 +34,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   backgroundBlur: false,
   blurLevel: 10,
   backgroundImages: [],
+  selectedBackgroundIndex: -1,
   mirrorVideo: true,
 };
 
@@ -110,6 +112,7 @@ export async function fetchUserSettings(): Promise<UserSettings> {
       backgroundBlur: meta.background_blur !== undefined ? meta.background_blur : cached.backgroundBlur,
       blurLevel: meta.blur_level !== undefined ? meta.blur_level : cached.blurLevel,
       backgroundImages: cached.backgroundImages, // images stay local only (too large for auth metadata)
+      selectedBackgroundIndex: cached.selectedBackgroundIndex ?? -1,
       mirrorVideo: meta.mirror_video !== undefined ? meta.mirror_video : cached.mirrorVideo,
     };
 

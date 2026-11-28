@@ -78,6 +78,7 @@ import {
   NetworkMode,
 } from "@/components/meeting/network-health";
 import { GreenRoomDrawer } from "@/components/meeting/green-room-drawer";
+import { useLiveBackgroundProcessor } from "@/lib/video-processor";
 
 interface RoomPageProps {
   params: Promise<{
@@ -361,6 +362,9 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
     useLocalParticipant();
   const participants = useParticipants();
   const speakingParticipants = useSpeakingParticipants();
+
+  // Real-time live camera background blur & virtual background shader processor
+  useLiveBackgroundProcessor();
 
   // Check if current participant is host (creator or granted host)
   const isCurrentUserHost = useMemo(() => {
@@ -1086,18 +1090,15 @@ function ConferenceRoom({ code, userName, isHostProp = false, onLeave }: Confere
             onModeChange={handleNetworkModeChange}
           />
 
-          {/* Settings Gear Icon – Gradient UI Button */}
+          {/* Settings Gear Icon – Crisp White Icon with Sleek Glass Container */}
           <button
             type="button"
             onClick={() => setIsSettingsOpen(true)}
-            className="h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150 cursor-pointer active:scale-90 hover:brightness-110 shadow-sm"
-            style={{
-              background: "linear-gradient(135deg, #38BDF8 0%, #6366F1 50%, #A855F7 100%)",
-            }}
+            className="h-8 w-8 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-150 cursor-pointer active:scale-90 shadow-sm backdrop-blur-md"
             title="Settings & Green Room"
             aria-label="Open Settings"
           >
-            <Settings className="h-4 w-4 text-white drop-shadow-sm" />
+            <Settings className="h-4 w-4 text-white" />
           </button>
 
           {/* Meeting Duration Timer in Geist Vercel font */}

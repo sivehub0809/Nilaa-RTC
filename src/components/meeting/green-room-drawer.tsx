@@ -667,7 +667,7 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
                 {/* Blur Toggle */}
                 <label className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200 cursor-pointer">
                   <div className="flex items-center gap-2">
-                    {settings.backgroundBlur ? (
+                    {settings.backgroundBlur && settings.selectedBackgroundIndex === -1 ? (
                       <Eye className="h-4 w-4 text-blue-600" />
                     ) : (
                       <EyeOff className="h-4 w-4 text-slate-400" />
@@ -679,19 +679,26 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
                   </div>
                   <input
                     type="checkbox"
-                    checked={settings.backgroundBlur}
-                    onChange={(e) => setSettings({ ...settings, backgroundBlur: e.target.checked })}
+                    checked={settings.backgroundBlur && settings.selectedBackgroundIndex === -1}
+                    onChange={(e) => {
+                      const willBlur = e.target.checked;
+                      setSettings({
+                        ...settings,
+                        backgroundBlur: willBlur,
+                        selectedBackgroundIndex: willBlur ? -1 : -1,
+                      });
+                    }}
                     className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
                   />
                 </label>
 
                 {/* Blur Level Slider (only visible when blur is enabled) */}
-                {settings.backgroundBlur && (
+                {settings.backgroundBlur && settings.selectedBackgroundIndex === -1 && (
                   <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
                       <span className="flex items-center gap-1.5">
                         <Sliders className="h-3.5 w-3.5 text-blue-600" />
-                        <span>Blur Level</span>
+                        <span>Blur Magnitude</span>
                       </span>
                       <span className="font-mono text-[11px] text-slate-500">
                         {settings.blurLevel}px
@@ -700,15 +707,15 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
                     <input
                       type="range"
                       min="1"
-                      max="20"
+                      max="30"
                       step="1"
                       value={settings.blurLevel}
                       onChange={(e) => setSettings({ ...settings, blurLevel: parseInt(e.target.value, 10) })}
                       className="w-full accent-blue-600 cursor-pointer h-2 bg-slate-200 rounded-lg"
                     />
                     <div className="flex items-center justify-between text-[10px] text-slate-400">
-                      <span>Subtle</span>
-                      <span>Heavy</span>
+                      <span>Subtle (1px)</span>
+                      <span>Heavy (30px)</span>
                     </div>
                   </div>
                 )}
@@ -728,29 +735,65 @@ export function GreenRoomDrawer({ isOpen, onClose, onProfileUpdated }: GreenRoom
                   {/* Existing background image thumbnails */}
                   {settings.backgroundImages.length > 0 && (
                     <div className="grid grid-cols-3 gap-2">
-                      {settings.backgroundImages.map((imgUrl, idx) => (
-                        <div
-                          key={idx}
-                          className="relative group aspect-video rounded-lg overflow-hidden border border-slate-200 bg-slate-100"
-                        >
-                          <img
-                            src={imgUrl}
-                            alt={`Background ${idx + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                          <button
-                            type="button"
+                      {settings.backgroundImages.map((imgUrl, idx) => {
+                        const isSelected = settings.selectedBackgroundIndex === idx;
+                        return (
+                          <div
+                            key={idx}
                             onClick={() => {
-                              const updated = settings.backgroundImages.filter((_, i) => i !== idx);
-                              setSettings({ ...settings, backgroundImages: updated });
-                              toast("Background image removed");
+                              if (isSelected) {
+                                setSettings({ ...settings, selectedBackgroundIndex: -1 });
+                              } else {
+                                setSettings({
+                                  ...settings,
+                                  selectedBackgroundIndex: idx,
+                                  backgroundBlur: false,
+                                });
+                              }
                             }}
-                            className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            className={`relative group aspect-video rounded-lg overflow-hidden border cursor-pointer transition-all ${
+                              isSelected
+                                ? "ring-2 ring-blue-500 border-blue-500 shadow-sm"
+                                : "border-slate-200 bg-slate-100 hover:border-slate-300"
+                            }`}
+                            title={isSelected ? "Click to deselect" : "Click to use as background"}
                           >
-                            <Trash2 className="h-4 w-4 text-white" />
-                          </button>
-                        </div>
-                      ))}
+                            <img
+                              src={imgUrl}
+                              alt={`Background ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            {isSelected && (
+                              <div className="absolute top-1 left-1 h-5 w-5 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                                <Check className="h-3 w-3" />
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const updated = settings.backgroundImages.filter((_, i) => i !== idx);
+                                const nextSelectedIndex =
+                                  settings.selectedBackgroundIndex === idx
+                                    ? -1
+                                    : settings.selectedBackgroundIndex > idx
+                                    ? settings.selectedBackgroundIndex - 1
+                                    : settings.selectedBackgroundIndex;
+                                setSettings({
+                                  ...settings,
+                                  backgroundImages: updated,
+                                  selectedBackgroundIndex: nextSelectedIndex,
+                                });
+                                toast("Background image removed");
+                              }}
+                              className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                              title="Delete this image"
+                            >
+                              <Trash2 className="h-4 w-4 text-white" />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
